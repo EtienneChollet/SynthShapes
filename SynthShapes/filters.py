@@ -9,9 +9,6 @@ class MinimumFilter3D(nn.Module):
     """
     A module to apply a minimum filter to 3D volumes using 3x3x3 patches.
 
-    This class extends `nn.Module` by applying a minimum
-    filter across the input tensor using 3x3x3 patches.
-
     Parameters
     ----------
     kernel_size : int
@@ -71,13 +68,12 @@ class GaussianSmoothing3D(nn.Module):
 
     def forward(self, volume):
         """
-        Apply the Gaussian smoothing filter to an input 3D volume as part of 
-        the model's forward pass.
+        Apply the Gaussian smoothing filter to an input 3D volume.
 
         Parameters
         ----------
         volume : torch.Tensor
-            Input 4D tensor representing the volume. Should be of shape 
+            Input 4D tensor representing the volume. Should be of shape
             [batch_size, channels, depth, height, width].
 
         Returns
@@ -87,18 +83,21 @@ class GaussianSmoothing3D(nn.Module):
             the input shape.
         """
         # Apply Gaussian filter using 3D convolution
-        volume = F.conv3d(volume, self.kernel, padding=self.padding, groups=volume.shape[1])
-
+        padding = (self.padding, self.padding, self.padding, self.padding,
+                   self.padding, self.padding)
+        padded_volume = F.pad(volume, padding, mode='reflect')
+        volume = F.conv3d(padded_volume, self.kernel, padding=0,
+                          groups=volume.shape[1])
         return volume
 
     def create_gaussian_kernel(self, kernel_size, sigma):
         """
-        Create a 3D Gaussian kernel.
+        Create the 3D Gaussian kernel.
 
         Parameters
         ----------
         kernel_size : int
-            Size of the Gaussian kernel.
+            Size of Gaussian kernel.
         sigma : float
             Standard deviation of the Gaussian kernel.
 
@@ -122,4 +121,3 @@ class GaussianSmoothing3D(nn.Module):
         kernel = kernel.repeat(1, 1, 1, 1, 1)
 
         return kernel
-
