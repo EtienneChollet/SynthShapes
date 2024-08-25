@@ -51,3 +51,28 @@ class MinMaxScaler(nn.Module):
             self.upper_bound - self.lower_bound) / (X_max - X_min)
 
         return X_scaled
+
+
+def ensure_5d_tensor(volume: torch.Tensor) -> torch.Tensor:
+    """
+    Ensures the input tensor has 5 dimensions [batch_size, channels, depth,
+    height, width].
+
+    Parameters
+    ----------
+    volume : torch.Tensor
+        Input tensor representing the volume.
+
+    Returns
+    -------
+    torch.Tensor
+        Tensor with 5 dimensions.
+    """
+    if volume.dim() == 3:  # (D, H, W)
+        # Add batch and channel dimensions
+        volume = volume.unsqueeze(0).unsqueeze(0)
+    elif volume.dim() == 4:  # (C, D, H, W)
+        # Add batch dimension
+        volume = volume.unsqueeze(0)
+
+    return volume

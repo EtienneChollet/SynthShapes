@@ -4,6 +4,8 @@ import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
 
+# Custom imports
+from .utils import ensure_5d_tensor
 
 class MinimumFilter3D(nn.Module):
     """
@@ -36,9 +38,14 @@ class MinimumFilter3D(nn.Module):
             Output 4D tensor after applying the minimum filter. Shape matches
             the input shape.
         """
+        # Reshaping tensor as needed
+        volume = ensure_5d_tensor(volume)
+
         # Apply a max pooling with a negative sign to simulate a minimum filter
         volume_neg = -volume
-        min_filtered = -F.max_pool3d(volume_neg, kernel_size=self.kernel_size, padding=self.padding, stride=1)
+        min_filtered = -F.max_pool3d(
+            volume_neg, kernel_size=self.kernel_size, padding=self.padding,
+            stride=1)
 
         return min_filtered
 
@@ -82,6 +89,9 @@ class GaussianSmoothing3D(nn.Module):
             Output 4D tensor after applying Gaussian smoothing. Shape matches 
             the input shape.
         """
+        # Reshaping tensor as needed
+        volume = ensure_5d_tensor(volume)
+
         # Apply Gaussian filter using 3D convolution
         padding = (self.padding, self.padding, self.padding, self.padding,
                    self.padding, self.padding)
