@@ -6,11 +6,6 @@
 
 This this is a toolbox for generating randomized, semi-realistic shapes that can be used for biomedical image augmentation.
 
-
-# Getting Started
-
-Hard requirements include `Cppyy~=2.3` and `Python~=3.9`
-
 ## Installation
 
 It is suggested that you create and activate a new mamba environment with python 3.9. You can learn how to install mamba by following the instructions provided in the [Miniforge repo](https://github.com/conda-forge/miniforge).
