@@ -3,6 +3,7 @@ __all__ = [
 ]
 
 # Standard imports
+import torch
 from torch.nn import Module
 
 
@@ -14,7 +15,8 @@ class Blender(Module):
         """
         super(Blender, self).__init__()
 
-    def forward(self, image, shapes, alpha=0.3):
+    def forward(self, foreground: torch.Tensor, background: torch.Tensor,
+                mask: torch.Tensor, alpha=0.3):
         """
         Perform blending operation.
 
@@ -29,18 +31,13 @@ class Blender(Module):
             Weight of the shape tensor. Larger magnitue
             --> more shape character
         """
-        image = image.float()
-        shapes = shapes.float()
-
-        # Make a mask where shapes are non-zero
-        mask = (shapes != 0).bool()
+        # Ensure image and shapes are both float
+        foreground = foreground.float()
+        background = background.float()
 
         # Init the blended tensor as a copy of the image tensor
-        blended_tensor = image.clone()
-
-        # Adjust the alpha scaling to ensure the result is less than p
-        # We scale the difference between p and v instead of v directly
-        blended_tensor[mask] = image[mask] - alpha * (
-            image[mask] - shapes[mask])
+        blended_tensor = torch.clone(background)
+        blended_tensor[mask] = -(
+            alpha * foreground[mask]) + (1 - alpha) * background[mask]
 
         return blended_tensor
