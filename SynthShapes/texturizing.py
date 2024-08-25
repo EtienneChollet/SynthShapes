@@ -6,7 +6,7 @@ __all__ = [
 import torch
 import cornucopia as cc
 from torch.nn import Module
-from SynthShapes.blender import Blender
+from SynthShapes.blending import Blender
 from cornucopia.labels import RandomGaussianMixtureTransform
 
 from .utils import MinMaxScaler
@@ -127,7 +127,11 @@ class ParenchymaSynthesizer(Module):
 
         # Blend each intensity tensor in the list with the parenchyma
         for intensities in intensities_list:
-            parenchyma = self.blender(parenchyma, intensities, alpha=alpha)
+            parenchyma = self.blender(
+                foreground=intensities,
+                background=parenchyma,
+                mask=(intensities > 0).bool(),
+                alpha=alpha)
 
         # Apply final scaling and quantile transform
         parenchyma = self.final_scaler(parenchyma)
