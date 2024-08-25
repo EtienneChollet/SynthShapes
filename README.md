@@ -4,7 +4,7 @@
 
 # Introduction
 
-This project aims to be a useful synthesis engine for generating randomized, semi-realistic shapes that can be used for biomedical image augmentation.
+This this is a toolbox for generating randomized, semi-realistic shapes that can be used for biomedical image augmentation.
 
 
 # Getting Started
