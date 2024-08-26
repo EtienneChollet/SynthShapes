@@ -12,6 +12,17 @@ class Blender(Module):
     def __init__(self):
         """
         Blend tensors (shapes into image) using blending parameter.
+
+        Parameters
+        ----------
+        image : tensor
+            The intensity image tensor to blend shapes into.
+        shapes : tensor
+            The tensor with shapes to blend (each shape should have a unique
+            ID).
+        alpha : float
+            Weight of the shape tensor. Larger magnitue
+            --> more shape character
         """
         super(Blender, self).__init__()
 
