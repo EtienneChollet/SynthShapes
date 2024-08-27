@@ -12,7 +12,7 @@ cupy_package = f'cupy-cuda{cuda_version}'
 
 setup(
     name='SynthShapes',
-    version='0.1.0',
+    version='0.1.3',
     description='A 3D shape generator implemented in pure pytorch for biomedical image augmentation.',
     long_description=open('README.md').read(),
     long_description_content_type="text/markdown",
