@@ -6,6 +6,7 @@ __all__ = [
 import torch
 import cornucopia as cc
 from torch.nn import Module
+from cornucopia.random import make_range
 from SynthShapes.blending import Blender
 from cornucopia.labels import RandomGaussianMixtureTransform
 
@@ -63,6 +64,58 @@ class LabelsToIntensities(Module):
         intensities[label_mask] = scaler(intensities[label_mask])
 
         return intensities
+
+
+class TexturizeLabels(Module):
+
+    def __init__(self, sigma: float = 2, intensity: float = 1,
+                 transform=None):
+        """
+        Parameters
+        ----------
+        sigma: Sampler or float
+            Standard deviation for label textures.
+        intensity 
+        """
+        super(TexturizeLabels, self).__init__()
+        self.sigma = cc.Uniform.make(make_range(0, sigma))
+        self.intensity = cc.Uniform.make(make_range(0, intensity))
+        if transform is None:
+            self.transform = torch.nn.Sequential(
+                cc.RandomGaussianMixtureTransform(sigma=self.sigma),
+                cc.RandomGammaNoiseTransform(),
+                cc.MulFieldTransform(vmin=0.1, vmax=0.75)
+                )
+        else:
+            self.transform = transform
+
+    def forward(self, label_map):
+        texturized = self._apply_transform(label_map.to(torch.int))
+        texturized = self._reassign_intensities(label_map, texturized)
+        return texturized
+
+    def _apply_transform(self, label_map: torch.Tensor):
+        texturized = self.transform(label_map)
+        return texturized
+
+    def _reassign_intensities(self, label_map: torch.Tensor,
+                              texturized: torch.Tensor):
+        """
+        Parameters
+        ----------
+        label_map : torch.Tensor
+            label map of unique integer labels.
+        """
+        background_label_ids = torch.unique(label_map)
+        texturized_adjusted = torch.clone(texturized)
+        # TODO: Avoid zeros
+        for label in background_label_ids:
+            if label > 0:
+                mask = (label_map == label).bool()
+                average_intensity = self.intensity()  # cc.Uniform(0, 1)()
+                bls = texturized[mask] - average_intensity
+                texturized_adjusted[mask] -= bls.mean()
+        return texturized_adjusted
 
 
 class ParenchymaSynthesizer(Module):
