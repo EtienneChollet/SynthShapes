@@ -6,10 +6,13 @@ __all__ = [
 # Standard Imports
 import torch
 from torch import nn
+import cornucopia as cc
+from cornucopia import Sampler
 from cornucopia.random import Uniform
+from cornucopia.random import make_range
 
 # Custom Imports
-from SynthShapes.texturizing import LabelsToIntensities
+from SynthShapes.texturizing import LabelsToIntensities, TexturizeLabels
 from SynthShapes.blending import Blender
 
 
@@ -439,10 +442,15 @@ class MultiLobeBlobAugmentation(MultiLobedBlobBase):
     return_mask : bool
         Optionally return the blob mask.
     """
-    def __init__(self, axis_length_range: list = [3, 6], max_blobs: int = 20,
-                 sharpness: float = 3, max_jitter: float = 0.5,
-                 num_lobes_range: list[int, int] = [1, 5], shape: int = 128,
-                 alpha_blend_range: list[float, float] = [0.25, 0.75],
+    def __init__(self,
+                 axis_length_range: list = [3, 6],
+                 max_blobs: int = 20,
+                 sharpness: float = 3,
+                 max_jitter: float = 0.5,
+                 num_lobes_range: list[int, int] = [1, 5],
+                 shape: int = 128,
+                 alpha: Sampler = cc.Uniform(0.25, 0.75),
+                 intensity: float = cc.Uniform(0, 1),
                  return_mask=False, device='cuda'
                  ):
         """
@@ -467,6 +475,9 @@ class MultiLobeBlobAugmentation(MultiLobedBlobBase):
             Sampler range for the number of lobes per blob.
         shape : int
             Size of the 3D volume (assumed to be cubic). Default is 64.
+        alpha_blend_range : list[float, float]
+            Range of alpha magnitude for alpha blending. Default is
+            [0.25, 0.75]
         return_mask : bool
             Optionally return the blob mask.
         """
@@ -479,9 +490,10 @@ class MultiLobeBlobAugmentation(MultiLobedBlobBase):
         self.sharpness = sharpness
         self.max_jitter = max_jitter
         self.num_lobes_range = num_lobes_range
+        self.alpha = cc.Uniform.make(make_range(0.5, alpha))
+        self.intensity = cc.Uniform.make(make_range(0, intensity))
         self.imprint_tensor = torch.zeros(self.shape, dtype=torch.float32,
                                           device=self.device)
-        self.alpha_blend_range = alpha_blend_range
         self.return_mask = return_mask
         self.current_label = 1
 
@@ -500,14 +512,11 @@ class MultiLobeBlobAugmentation(MultiLobedBlobBase):
             Blobs alpha-blended into background.
         """
         blob_labels = self.make_shapes().unsqueeze(0).unsqueeze(0)
-        blob_intensities = LabelsToIntensities(max=1)(blob_labels)
-        blob_mask = (blob_intensities > 0).bool()
+        blob_mask = (blob_labels > 0).bool()
+        blob_intensities = TexturizeLabels(intensity=self.intensity)(blob_labels)
+        blob_intensities[~blob_mask] = 0
         blended_blobs = Blender()(
-            blob_intensities, x, blob_mask, alpha=Uniform(
-                self.alpha_blend_range[0],
-                self.alpha_blend_range[1]
-                )()
-            )
+            blob_intensities, x, blob_mask, alpha=self.alpha())
         if self.return_mask:
             return blended_blobs, blob_mask
         return blended_blobs
@@ -869,7 +878,8 @@ class TorusBlobAugmentation(TorusBlobBase):
     def __init__(self, major_radius_range=[10, 20], minor_radius_range=[3, 6],
                  max_blobs=10, max_jitter: float = 0.5,
                  device='cuda', shape=128,
-                 alpha_blend_range: list[float, float] = [0.25, 0.75],
+                 alpha: Sampler = cc.Uniform(0.25, 0.75),
+                 intensity: float = 1,
                  return_mask: bool = False
                  ):
         super(TorusBlobBase, self).__init__()
@@ -894,6 +904,12 @@ class TorusBlobAugmentation(TorusBlobBase):
             'cuda'.
         shape : int, optional
             Size of the 3D volume (assumed to be cubic). Default is 128.
+        alpha : list[float, float]
+            Range of alpha magnitude for alpha blending. Default is
+            [0.25, 0.75]
+        intensity
+        return_mask : bool
+            Optionally return torus mask. Default is False
         """
         self.major_radius_range = major_radius_range
         self.minor_radius_range = minor_radius_range
@@ -904,9 +920,10 @@ class TorusBlobAugmentation(TorusBlobBase):
         self.n_blobs = torch.randint(1, max_blobs + 1, (1,)).item()
         self.imprint_tensor = torch.zeros(self.shape, dtype=torch.float32,
                                           device=self.device)
-        self.current_label = 1
-        self.alpha_blend_range = alpha_blend_range
+        self.intensity = cc.Uniform.make(make_range(0, intensity))
+        self.alpha = cc.Uniform.make(make_range(0.5, alpha))
         self.return_mask = return_mask
+        self.current_label = 1
 
     def forward(self, x):
         """
@@ -923,14 +940,11 @@ class TorusBlobAugmentation(TorusBlobBase):
             Tori alpha-blended into background.
         """
         blob_labels = self.make_shapes().unsqueeze(0).unsqueeze(0)
-        torus_intensities = LabelsToIntensities(max=0.5)(blob_labels)
-        torus_mask = (torus_intensities > 0).bool()
+        torus_mask = (blob_labels > 0).bool()
+        torus_intensities = TexturizeLabels(intensity=self.intensity)(blob_labels)
+        torus_intensities[~torus_mask] = 0
         blended_tori = Blender()(
-            torus_intensities, x, torus_mask, alpha=Uniform(
-                self.alpha_blend_range[0],
-                self.alpha_blend_range[1]
-                )()
-            )
+            torus_intensities, x, torus_mask, alpha=self.alpha())
         if self.return_mask:
             return blended_tori, torus_mask
         return blended_tori
