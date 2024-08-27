@@ -22,56 +22,72 @@ class MultiLobedBlobBase(nn.Module):
 
     Parameters
     ----------
-    axis_length_range : list[int]
-        Range of the lengths for any given axis of the blob.
-    max_blobs : int
-        Maximum number of multi-lobed blobs.
-    sharpness : float
-        Upper bound for factor controlling the squareness of the blobs.
-        Note: +5 = mostly squares, 2>sharpness>4 = spheres, sharpness<2=stars.
-    max_jitter : float
-        Maximum amount of jitter/raggedness to apply to the shape.
-    num_lobes_range : list[int, int]
-        Sampler range for the number of lobes per blob.
     shape : int
         Size of the 3D volume (assumed to be cubic). Default is 128.
+    axis_length : Sampler
+        Range of the lengths for any given axis of the blob. Default is
+        RandInt(3, 6)
+    n_blobs : Sampler
+        Maximum number of multi-lobed blobs. Default is RandInt(10, 25)
+    n_lobes : Sampler
+        Sampler range for the number of lobes per blob. Default is
+        RandInt(1, 5)
+    sharpness : Sampler
+        Upper bound for factor controlling the squareness of the blobs.
+        Note: +5 = mostly squares, 2>sharpness>4 = spheres, sharpness<2=stars.
+        Default is Uniform(1, 3)
+    jitter : float
+        Maximum amount of jitter/raggedness to apply to the shape.
+        Default is Uniform(0, 0.5)
+    device : str
+        Device to perform computations on.
     """
-    def __init__(self, axis_length_range: list = [3, 6], max_blobs: int = 20,
-                 sharpness: float = 3, max_jitter: float = 0.5,
-                 num_lobes_range: list[int, int] = [1, 5], shape: int = 128,
+    def __init__(self,
+                 shape: int = 128,
+                 axis_length: Sampler = cc.RandInt(3, 6),
+                 n_blobs: Sampler = cc.RandInt(10, 25),
+                 n_lobes: Sampler = cc.RandInt(1, 5),
+                 sharpness: Sampler = cc.Uniform(1, 3),
+                 jitter: Sampler = cc.Uniform(0, 0.5),
                  device='cuda'):
         """
         Base class for multi-lobed blob operations.
 
         Parameters
         ----------
-        axis_length_range : list[int]
-            Range of the lengths for any given axis of the blob.
-        max_blobs : int
-            Maximum number of multi-lobed blobs.
-        sharpness : float
-            Upper bound for factor controlling the squareness of the blobs.
-            Note: +5 = mostly squares, 2>sharpness>4 = spheres,
-            sharpness<2=stars.
-        max_jitter : float
-            Maximum amount of jitter/raggedness to apply to the shape.
-        num_lobes_range : list[int, int]
-            Sampler range for the number of lobes per blob.
         shape : int
             Size of the 3D volume (assumed to be cubic). Default is 128.
+        axis_length : Sampler
+            Range of the lengths for any given axis of the blob. Default is
+            RandInt(3, 6)
+        n_blobs : Sampler
+            Maximum number of multi-lobed blobs. Default is RandInt(10, 25)
+        n_lobes : Sampler
+            Sampler range for the number of lobes per blob. Default is
+            RandInt(1, 5)
+        sharpness : Sampler
+            Upper bound for factor controlling the squareness of the blobs.
+            Note: +5 = mostly squares, 2>sharpness>4 = spheres, sharpness<2=stars.
+            Default is Uniform(1, 3)
+        jitter : float
+            Maximum amount of jitter/raggedness to apply to the shape.
+            Default is Uniform(0, 0.5)
+        device : str
+            Device to perform computations on.
         """
         super(MultiLobedBlobBase, self).__init__()
-        self.axis_length_range = axis_length_range
-        self.device = device
         self.shape = [shape, shape, shape]
+        self.axis_length = cc.RandInt.make(make_range(3, axis_length))
+        self.n_blobs = cc.RandInt.make(make_range(1, n_blobs))
+        self.n_lobes = cc.RandInt.make(make_range(1, n_lobes))
+        self.sharpness = cc.Uniform.make(make_range(1, sharpness))
+        self.jitter = cc.Uniform.make(make_range(0, jitter))
+        self.device = device
+
+        self.current_label = 1
         self.depth, self.height, self.width = self.shape
-        self.n_blobs = torch.randint(1, max_blobs + 1, (1,)).item()
-        self.sharpness = sharpness
-        self.max_jitter = max_jitter
-        self.num_lobes_range = num_lobes_range
         self.imprint_tensor = torch.zeros(self.shape, dtype=torch.float32,
                                           device=self.device)
-        self.current_label = 1
 
     def sample_axis_lengths(self):
         """
@@ -82,11 +98,9 @@ class MultiLobedBlobBase(nn.Module):
         axis_lengths : torch.Tensor[int, int, int]
             Axis lengths of the blob (D, H, W).
         """
-        axis_lengths = torch.randint(
-            self.axis_length_range[0],
-            self.axis_length_range[1] + 1,
-            (3,),
-            device=self.device)
+        axis_lengths = torch.tensor(
+            [self.axis_length(), self.axis_length(), self.axis_length()]
+        )
         return axis_lengths
 
     def sample_centroid_coords(self, axis_lengths: torch.Tensor):
@@ -186,7 +200,7 @@ class MultiLobedBlobBase(nn.Module):
         axes_list = []
 
         # Iterate until we get self.n_blobs blobs.
-        while len(centers) < self.n_blobs:
+        while len(centers) < self.n_blobs():
             # Sample a tuple of axis lengths.
             axis_lengths = self.sample_axis_lengths()
             # Sample a tuple of centroid coordinates.
@@ -258,15 +272,11 @@ class MultiLobedBlobBase(nn.Module):
         """
         # Handle the sharpness input
         # TODO: move uniform INIT to __init__()
-        if isinstance(self.sharpness, (float, int)):
-            sharpness = Uniform(0.75, self.sharpness)()
-        elif isinstance(self.sharpness, list):
-            sharpness = Uniform(*self.sharpness)()
 
         # Create noise for the entire distance map by sampling a uniform
         # distribution centered at 0 and whose stdev depends on self.jitter.
         # Prevents the blob from being perfectly symmetric.
-        noise = torch.normal(0, self.max_jitter,
+        noise = torch.normal(0, self.jitter(),
                              size=[self.depth, self.height, self.width],
                              device=self.device)
         # Calculates probability of a voxel belonging to a lobe at each point.
@@ -274,11 +284,11 @@ class MultiLobedBlobBase(nn.Module):
         # sharpness, which controls how quickly the probability drops off as
         # you move away from the centroid.
         lobe_prob = (torch.abs(meshgrid[0] / (axis_lengths[0] + noise)
-                               ) ** sharpness +
+                               ) ** self.sharpness() +
                      torch.abs(meshgrid[1] / (axis_lengths[1] + noise)
-                               ) ** sharpness +
+                               ) ** self.sharpness() +
                      torch.abs(meshgrid[2] / (axis_lengths[2] + noise)
-                               ) ** sharpness)
+                               ) ** self.sharpness())
         return lobe_prob
 
     def _make_lobe_from_prob(self, lobe_prob):
@@ -312,11 +322,11 @@ class MultiLobedBlobBase(nn.Module):
             # meshgrid = self._meshgrid_origin_at_centroid(center)
             lobe_tensor = torch.zeros(
                 self.shape, dtype=torch.float32, device=self.device)
-            num_lobes = torch.randint(
-                self.num_lobes_range[0], self.num_lobes_range[1] + 1, (1,)
-                ).item()
+            #num_lobes = torch.randint(
+            #    self.n_lobes[0], self.n_lobes[1] + 1, (1,)
+            #    ).item()
 
-            for _ in range(num_lobes):
+            for _ in range(self.n_lobes()):
                 # lobe_center_shift = torch.randint(-axes[0]//2,
                 # axes[0]//2, (3,), device=self.device)
                 lobe_center_shift = torch.randint(
@@ -346,63 +356,78 @@ class MultiLobedBlobSampler(MultiLobedBlobBase):
 
     Parameters
     ----------
-    axis_length_range : list[int]
-        Range of the lengths for any given axis of the blob.
-    max_blobs : int
-        Maximum number of multi-lobed blobs.
-    sharpness : float
-        Upper bound for factor controlling the squareness of the blobs.
-        Note: +5 = mostly squares, 2>sharpness>4 = spheres,
-        sharpness<2=stars.
-    max_jitter : float
-        Maximum amount of jitter/raggedness to apply to the shape.
-    num_lobes_range : list[int, int]
-        Sampler range for the number of lobes per blob.
     shape : int
-        Size of the 3D volume (assumed to be cubic). Default is 64.
+        Size of the 3D volume (assumed to be cubic). Default is 128.
+    axis_length : Sampler
+        Range of the lengths for any given axis of the blob. Default is
+        RandInt(3, 6)
+    n_blobs : Sampler
+        Maximum number of multi-lobed blobs. Default is RandInt(10, 25)
+    n_lobes : Sampler
+        Sampler range for the number of lobes per blob. Default is
+        RandInt(1, 5)
+    sharpness : Sampler
+        Upper bound for factor controlling the squareness of the blobs.
+        Note: +5 = mostly squares, 2>sharpness>4 = spheres, sharpness<2=stars.
+        Default is Uniform(1, 3)
+    jitter : float
+        Maximum amount of jitter/raggedness to apply to the shape.
+        Default is Uniform(0, 0.5)
     return_mask : bool
-        Optionally return the blob mask. Default is False
+        Optionally return mask.
+    device : str
+        Device to perform computations on.
     """
-    def __init__(self, axis_length_range: list = [3, 6], max_blobs: int = 20,
-                 sharpness: float = 3, max_jitter: float = 0.5,
-                 num_lobes_range: list[int, int] = [1, 5], shape: int = 128,
-                 return_mask=False, device='cuda'
-                 ):
+    def __init__(self,
+                 shape: int = 128,
+                 axis_length: Sampler = cc.RandInt(3, 6),
+                 n_blobs: Sampler = cc.RandInt(10, 25),
+                 n_lobes: Sampler = cc.RandInt(1, 5),
+                 sharpness: Sampler = cc.Uniform(1, 3),
+                 jitter: Sampler = cc.Uniform(0, 0.5),
+                 return_mask: bool = False,
+                 device: str = 'cuda'):
         """
         PyTorch module to sample multi-lobed blob labels in a 3D tensor.
 
         Parameters
         ----------
-        axis_length_range : list[int]
-            Range of the lengths for any given axis of the blob.
-        max_blobs : int
-            Maximum number of multi-lobed blobs.
-        sharpness : float
-            Upper bound for factor controlling the squareness of the blobs.
-            Note: +5 = mostly squares, 2>sharpness>4 = spheres,
-            sharpness<2=stars.
-        max_jitter : float
-            Maximum amount of jitter/raggedness to apply to the shape.
-        num_lobes_range : list[int, int]
-            Sampler range for the number of lobes per blob.
         shape : int
-            Size of the 3D volume (assumed to be cubic). Default is 64.
+            Size of the 3D volume (assumed to be cubic). Default is 128.
+        axis_length : Sampler
+            Range of the lengths for any given axis of the blob. Default is
+            RandInt(3, 6)
+        n_blobs : Sampler
+            Maximum number of multi-lobed blobs. Default is RandInt(10, 25)
+        n_lobes : Sampler
+            Sampler range for the number of lobes per blob. Default is
+            RandInt(1, 5)
+        sharpness : Sampler
+            Upper bound for factor controlling the squareness of the blobs.
+            Note: +5 = mostly squares, 2>sharpness>4 = spheres, sharpness<2=stars.
+            Default is Uniform(1, 3)
+        jitter : float
+            Maximum amount of jitter/raggedness to apply to the shape.
+            Default is Uniform(0, 0.5)
         return_mask : bool
-            Optionally return the blob mask. Default is False
+            Optionally return mask.
+        device : str
+            Device to perform computations on.
         """
         super(MultiLobedBlobBase, self).__init__()
-        self.axis_length_range = axis_length_range
-        self.device = device
         self.shape = [shape, shape, shape]
+        self.axis_length = cc.RandInt.make(make_range(3, axis_length))
+        self.n_blobs = cc.RandInt.make(make_range(1, n_blobs))
+        self.n_lobes = cc.RandInt.make(make_range(1, n_lobes))
+        self.sharpness = cc.Uniform.make(make_range(1, sharpness))
+        self.jitter = cc.Uniform.make(make_range(0, jitter))
+        self.return_mask = return_mask
+        self.device = device
+
+        self.current_label = 1
         self.depth, self.height, self.width = self.shape
-        self.n_blobs = torch.randint(1, max_blobs + 1, (1,)).item()
-        self.sharpness = sharpness
-        self.max_jitter = max_jitter
-        self.num_lobes_range = num_lobes_range
         self.imprint_tensor = torch.zeros(self.shape, dtype=torch.float32,
                                           device=self.device)
-        self.return_mask = return_mask
-        self.current_label = 1
 
     def forward(self):
         """
@@ -425,34 +450,39 @@ class MultiLobeBlobAugmentation(MultiLobedBlobBase):
 
     Parameters
     ----------
-    axis_length_range : list[int]
-        Range of the lengths for any given axis of the blob.
-    max_blobs : int
-        Maximum number of multi-lobed blobs.
-    sharpness : float
-        Upper bound for factor controlling the squareness of the blobs.
-        Note: +5 = mostly squares, 2>sharpness>4 = spheres,
-        sharpness<2=stars.
-    max_jitter : float
-        Maximum amount of jitter/raggedness to apply to the shape.
-    num_lobes_range : list[int, int]
-        Sampler range for the number of lobes per blob.
     shape : int
-        Size of the 3D volume (assumed to be cubic). Default is 64.
+        Size of the 3D volume (assumed to be cubic). Default is 128.
+    axis_length : Sampler
+        Range of the lengths for any given axis of the blob. Default is
+        RandInt(3, 6)
+    n_blobs : Sampler
+        Maximum number of multi-lobed blobs. Default is RandInt(10, 25)
+    n_lobes : Sampler
+        Sampler range for the number of lobes per blob. Default is
+        RandInt(1, 5)
+    sharpness : Sampler
+        Upper bound for factor controlling the squareness of the blobs.
+        Note: +5 = mostly squares, 2>sharpness>4 = spheres, sharpness<2=stars.
+        Default is Uniform(1, 3)
+    jitter : float
+        Maximum amount of jitter/raggedness to apply to the shape.
+        Default is Uniform(0, 0.5)
     return_mask : bool
-        Optionally return the blob mask.
+        Optionally return mask.
+    device : str
+        Device to perform computations on.
     """
     def __init__(self,
-                 axis_length_range: list = [3, 6],
-                 max_blobs: int = 20,
-                 sharpness: float = 3,
-                 max_jitter: float = 0.5,
-                 num_lobes_range: list[int, int] = [1, 5],
                  shape: int = 128,
+                 axis_length: Sampler = cc.RandInt(3, 6),
+                 n_blobs: Sampler = cc.RandInt(10, 25),
+                 n_lobes: Sampler = cc.RandInt(1, 5),
+                 sharpness: Sampler = cc.Uniform(1, 3),
+                 jitter: Sampler = cc.Uniform(0, 0.5),
+                 return_mask: bool = False,
                  alpha: Sampler = cc.Uniform(0.25, 0.75),
                  intensity: float = cc.Uniform(0, 1),
-                 return_mask=False, device='cuda'
-                 ):
+                 device='cuda'):
         """
         PyTorch module to augment 3D data (B, C, D, H, W) by sampling and
         alpha-blending multi-lobed blobs.
@@ -461,40 +491,44 @@ class MultiLobeBlobAugmentation(MultiLobedBlobBase):
 
         Parameters
         ----------
-        axis_length_range : list[int]
-            Range of the lengths for any given axis of the blob.
-        max_blobs : int
-            Maximum number of multi-lobed blobs.
-        sharpness : float
-            Upper bound for factor controlling the squareness of the blobs.
-            Note: +5 = mostly squares, 2>sharpness>4 = spheres,
-            sharpness<2=stars.
-        max_jitter : float
-            Maximum amount of jitter/raggedness to apply to the shape.
-        num_lobes_range : list[int, int]
-            Sampler range for the number of lobes per blob.
         shape : int
-            Size of the 3D volume (assumed to be cubic). Default is 64.
-        alpha_blend_range : list[float, float]
-            Range of alpha magnitude for alpha blending. Default is
-            [0.25, 0.75]
+            Size of the 3D volume (assumed to be cubic). Default is 128.
+        axis_length : Sampler
+            Range of the lengths for any given axis of the blob. Default is
+            RandInt(3, 6)
+        n_blobs : Sampler
+            Maximum number of multi-lobed blobs. Default is RandInt(10, 25)
+        n_lobes : Sampler
+            Sampler range for the number of lobes per blob. Default is
+            RandInt(1, 5)
+        sharpness : Sampler
+            Upper bound for factor controlling the squareness of the blobs.
+            Note: +5 = mostly squares, 2>sharpness>4 = spheres, sharpness<2=stars.
+            Default is Uniform(1, 3)
+        jitter : float
+            Maximum amount of jitter/raggedness to apply to the shape.
+            Default is Uniform(0, 0.5)
         return_mask : bool
-            Optionally return the blob mask.
+            Optionally return mask.
+        device : str
+            Device to perform computations on.
         """
         super(MultiLobedBlobBase, self).__init__()
-        self.axis_length_range = axis_length_range
-        self.device = device
         self.shape = [shape, shape, shape]
-        self.depth, self.height, self.width = self.shape
-        self.n_blobs = torch.randint(1, max_blobs + 1, (1,)).item()
-        self.sharpness = sharpness
-        self.max_jitter = max_jitter
-        self.num_lobes_range = num_lobes_range
+        self.axis_length = cc.RandInt.make(make_range(3, axis_length))
+        self.n_blobs = cc.RandInt.make(make_range(1, n_blobs))
+        self.n_lobes = cc.RandInt.make(make_range(1, n_lobes))
+        self.sharpness = cc.Uniform.make(make_range(1, sharpness))
+        self.jitter = cc.Uniform.make(make_range(0, jitter))
+        self.return_mask = return_mask
+
         self.alpha = cc.Uniform.make(make_range(0.5, alpha))
         self.intensity = cc.Uniform.make(make_range(0, intensity))
-        self.imprint_tensor = torch.zeros(self.shape, dtype=torch.float32,
-                                          device=self.device)
-        self.return_mask = return_mask
+        self.device = device
+
+        self.depth, self.height, self.width = self.shape
+        self.imprint_tensor = torch.zeros(
+            self.shape, dtype=torch.float32, device=self.device)
         self.current_label = 1
 
     def forward(self, x):
@@ -513,7 +547,8 @@ class MultiLobeBlobAugmentation(MultiLobedBlobBase):
         """
         blob_labels = self.make_shapes().unsqueeze(0).unsqueeze(0)
         blob_mask = (blob_labels > 0).bool()
-        blob_intensities = TexturizeLabels(intensity=self.intensity)(blob_labels)
+        blob_intensities = TexturizeLabels(intensity=self.intensity)(
+            blob_labels)
         blob_intensities[~blob_mask] = 0
         blended_blobs = Blender()(
             blob_intensities, x, blob_mask, alpha=self.alpha())
@@ -536,9 +571,9 @@ class TorusBlobBase(nn.Module):
         Range of lengths for the major radius of the torus. Default is [10, 20]
     minor_radius_range : list of int, optional
         Range of lengths for the minor radius of the torus. Default is [3, 6].
-    max_blobs : int, optional
+    n_blobs : int, optional
         Maximum number of tori to generate. Default is 10.
-    max_jitter : float, optional
+    jitter : float, optional
         Maximum amount of jitter to apply to the shape. Default is 0.5.
     device : str, optional
         Device to run the tensor operations ('cuda' or 'cpu'). Default is
@@ -547,7 +582,8 @@ class TorusBlobBase(nn.Module):
         Size of the 3D volume (assumed to be cubic). Default is 128.
     """
     def __init__(self, major_radius_range=[10, 20], minor_radius_range=[3, 6],
-                 max_blobs=10, max_jitter: float = 0.5,
+                 n_blobs: Sampler = cc.RandInt(10, 25),
+                 jitter: Sampler = cc.Uniform(0, 0.5),
                  device='cuda', shape=128):
         """
         Base PyTorch module for torus blob operations.
@@ -560,9 +596,9 @@ class TorusBlobBase(nn.Module):
         minor_radius_range : list of int, optional
             Range of lengths for the minor radius of the torus. Default is
             [3, 6].
-        max_blobs : int, optional
+        n_blobs : int, optional
             Maximum number of tori to generate. Default is 10.
-        max_jitter : float, optional
+        jitter : float, optional
             Maximum amount of jitter to apply to the shape. Default is 0.5.
         device : str, optional
             Device to run the tensor operations ('cuda' or 'cpu'). Default is
@@ -573,11 +609,11 @@ class TorusBlobBase(nn.Module):
         super(TorusBlobBase, self).__init__()
         self.major_radius_range = major_radius_range
         self.minor_radius_range = minor_radius_range
-        self.max_jitter = max_jitter
+        self.jitter = cc.Uniform.make(make_range(0, jitter))
         self.device = device
         self.shape = [shape, shape, shape]
         self.depth, self.height, self.width = self.shape
-        self.n_blobs = torch.randint(1, max_blobs + 1, (1,)).item()
+        self.n_blobs = cc.RandInt.make(make_range(1, n_blobs))
         self.imprint_tensor = torch.zeros(self.shape, dtype=torch.float32,
                                           device=self.device)
         self.current_label = 1
@@ -684,7 +720,7 @@ class TorusBlobBase(nn.Module):
         radii_list = []
 
         # Sample a blob if we don't have self.n_blobs blobs
-        while len(centers) < self.n_blobs:
+        while len(centers) < self.n_blobs():
             # Get major and minor axes
             major_radius, minor_radius = self.sample_radii()
             # Sample coords ensuring max dimension of shape resides in bbox
@@ -739,7 +775,7 @@ class TorusBlobBase(nn.Module):
         return [rotated_grid[..., i] for i in range(3)]
 
     def _make_torus_prob(self, meshgrid, major_radius, minor_radius):
-        noise = torch.normal(0, self.max_jitter,
+        noise = torch.normal(0, self.jitter(),
                              size=[self.depth, self.height, self.width],
                              device=self.device)
         radial_distance = torch.sqrt(
@@ -790,9 +826,9 @@ class TorusBlobSampler(TorusBlobBase):
         [10, 20].
     minor_radius_range : list of int, optional
         Range of lengths for the minor radius of the torus. Default is [3, 6].
-    max_blobs : int, optional
+    n_blobs : int, optional
         Maximum number of tori to generate. Default is 10.
-    max_jitter : float, optional
+    jitter : float, optional
         Maximum amount of jitter to apply to the shape. Default is 0.5.
     device : str, optional
         Device to run the tensor operations ('cuda' or 'cpu'). Default is
@@ -801,7 +837,8 @@ class TorusBlobSampler(TorusBlobBase):
         Size of the 3D volume (assumed to be cubic). Default is 128.
     """
     def __init__(self, major_radius_range=[10, 20], minor_radius_range=[3, 6],
-                 max_blobs=10, max_jitter: float = 0.5,
+                 n_blobs: Sampler = cc.RandInt(10, 25),
+                 jitter: Sampler = cc.Uniform(0, 0.5),
                  device='cuda', shape=128
                  ):
         """
@@ -817,9 +854,9 @@ class TorusBlobSampler(TorusBlobBase):
         minor_radius_range : list of int, optional
             Range of lengths for the minor radius of the torus. Default is
             [3, 6].
-        max_blobs : int, optional
+        n_blobs : int, optional
             Maximum number of tori to generate. Default is 10.
-        max_jitter : float, optional
+        jitter : float, optional
             Maximum amount of jitter to apply to the shape. Default is 0.5.
         device : str, optional
             Device to run the tensor operations ('cuda' or 'cpu'). Default is
@@ -830,11 +867,11 @@ class TorusBlobSampler(TorusBlobBase):
         super(TorusBlobBase, self).__init__()
         self.major_radius_range = major_radius_range
         self.minor_radius_range = minor_radius_range
-        self.max_jitter = max_jitter
+        self.jitter = cc.Uniform.make(make_range(0, jitter))
         self.device = device
         self.shape = [shape, shape, shape]
         self.depth, self.height, self.width = self.shape
-        self.n_blobs = torch.randint(1, max_blobs + 1, (1,)).item()
+        self.n_blobs = cc.RandInt.make(make_range(1, n_blobs))
         self.imprint_tensor = torch.zeros(self.shape, dtype=torch.float32,
                                           device=self.device)
         self.current_label = 1
@@ -865,9 +902,9 @@ class TorusBlobAugmentation(TorusBlobBase):
         [10, 20].
     minor_radius_range : list of int, optional
         Range of lengths for the minor radius of the torus. Default is [3, 6].
-    max_blobs : int, optional
+    n_blobs : int, optional
         Maximum number of tori to generate. Default is 10.
-    max_jitter : float, optional
+    jitter : float, optional
         Maximum amount of jitter to apply to the shape. Default is 0.5.
     device : str, optional
         Device to run the tensor operations ('cuda' or 'cpu'). Default is
@@ -876,7 +913,8 @@ class TorusBlobAugmentation(TorusBlobBase):
         Size of the 3D volume (assumed to be cubic). Default is 128.
     """
     def __init__(self, major_radius_range=[10, 20], minor_radius_range=[3, 6],
-                 max_blobs=10, max_jitter: float = 0.5,
+                 n_blobs=cc.RandInt(10, 25),
+                 jitter: Sampler = cc.Uniform(0, 0.5),
                  device='cuda', shape=128,
                  alpha: Sampler = cc.Uniform(0.25, 0.75),
                  intensity: float = 1,
@@ -895,9 +933,9 @@ class TorusBlobAugmentation(TorusBlobBase):
         minor_radius_range : list of int, optional
             Range of lengths for the minor radius of the torus. Default is
             [3, 6].
-        max_blobs : int, optional
+        n_blobs : int, optional
             Maximum number of tori to generate. Default is 10.
-        max_jitter : float, optional
+        jitter : float, optional
             Maximum amount of jitter to apply to the shape. Default is 0.5.
         device : str, optional
             Device to run the tensor operations ('cuda' or 'cpu'). Default is
@@ -913,11 +951,11 @@ class TorusBlobAugmentation(TorusBlobBase):
         """
         self.major_radius_range = major_radius_range
         self.minor_radius_range = minor_radius_range
-        self.max_jitter = max_jitter
+        self.jitter = cc.Uniform.make(make_range(0, jitter))
         self.device = device
         self.shape = [shape, shape, shape]
         self.depth, self.height, self.width = self.shape
-        self.n_blobs = torch.randint(1, max_blobs + 1, (1,)).item()
+        self.n_blobs = cc.RandInt.make(make_range(1, n_blobs))
         self.imprint_tensor = torch.zeros(self.shape, dtype=torch.float32,
                                           device=self.device)
         self.intensity = cc.Uniform.make(make_range(0, intensity))
@@ -941,7 +979,8 @@ class TorusBlobAugmentation(TorusBlobBase):
         """
         blob_labels = self.make_shapes().unsqueeze(0).unsqueeze(0)
         torus_mask = (blob_labels > 0).bool()
-        torus_intensities = TexturizeLabels(intensity=self.intensity)(blob_labels)
+        torus_intensities = TexturizeLabels(intensity=self.intensity)(
+            blob_labels)
         torus_intensities[~torus_mask] = 0
         blended_tori = Blender()(
             torus_intensities, x, torus_mask, alpha=self.alpha())
