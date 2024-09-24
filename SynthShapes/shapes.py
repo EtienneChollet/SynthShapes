@@ -8,11 +8,10 @@ import torch
 from torch import nn
 import cornucopia as cc
 from cornucopia import Sampler
-from cornucopia.random import Uniform
 from cornucopia.random import make_range
 
 # Custom Imports
-from SynthShapes.texturizing import LabelsToIntensities, TexturizeLabels
+from SynthShapes.texturizing import TexturizeLabels
 from SynthShapes.blending import Blender
 
 
@@ -67,7 +66,8 @@ class MultiLobedBlobBase(nn.Module):
             RandInt(1, 5)
         sharpness : Sampler
             Upper bound for factor controlling the squareness of the blobs.
-            Note: +5 = mostly squares, 2>sharpness>4 = spheres, sharpness<2=stars.
+            Note: +5 = mostly squares, 2>sharpness>4 = spheres,
+            sharpness<2=stars.
             Default is Uniform(1, 3)
         jitter : float
             Maximum amount of jitter/raggedness to apply to the shape.
@@ -322,13 +322,8 @@ class MultiLobedBlobBase(nn.Module):
             # meshgrid = self._meshgrid_origin_at_centroid(center)
             lobe_tensor = torch.zeros(
                 self.shape, dtype=torch.float32, device=self.device)
-            #num_lobes = torch.randint(
-            #    self.n_lobes[0], self.n_lobes[1] + 1, (1,)
-            #    ).item()
 
             for _ in range(self.n_lobes()):
-                # lobe_center_shift = torch.randint(-axes[0]//2,
-                # axes[0]//2, (3,), device=self.device)
                 lobe_center_shift = torch.randint(
                     -axes[0]+1, axes[0]-1, (3,), device=self.device)
                 shifted_center = (center[0] + lobe_center_shift[0],
@@ -345,7 +340,7 @@ class MultiLobedBlobBase(nn.Module):
             # Clip values to 1 for overlap regions
             # self.imprint_tensor[self.imprint_tensor > 1] = 1
 
-        return self.imprint_tensor
+        return self.imprint_tensor.unsqueeze(0)
 
 
 class MultiLobedBlobSampler(MultiLobedBlobBase):
@@ -404,7 +399,8 @@ class MultiLobedBlobSampler(MultiLobedBlobBase):
             RandInt(1, 5)
         sharpness : Sampler
             Upper bound for factor controlling the squareness of the blobs.
-            Note: +5 = mostly squares, 2>sharpness>4 = spheres, sharpness<2=stars.
+            Note: +5 = mostly squares, 2>sharpness>4 = spheres,
+            sharpness<2=stars.
             Default is Uniform(1, 3)
         jitter : float
             Maximum amount of jitter/raggedness to apply to the shape.
@@ -438,7 +434,12 @@ class MultiLobedBlobSampler(MultiLobedBlobBase):
         shapes : torch.tensor[int]
             Blobs with unique integer labels.
         """
-        return self.make_shapes()
+        blob_labels = self.make_shapes()
+        if self.return_mask:
+            blob_mask = (blob_labels > 0).bool().to(self.device)
+            return blob_labels, blob_mask
+        else:
+            return blob_mask
 
 
 class MultiLobeBlobAugmentation(MultiLobedBlobBase):
@@ -481,7 +482,8 @@ class MultiLobeBlobAugmentation(MultiLobedBlobBase):
                  jitter: Sampler = cc.Uniform(0, 0.5),
                  return_mask: bool = False,
                  alpha: Sampler = cc.Uniform(0.25, 0.75),
-                 intensity: float = cc.Uniform(0, 1),
+                 intensity_shift: float = cc.Uniform(10, 20),
+                 augmentation=None,
                  device='cuda'):
         """
         PyTorch module to augment 3D data (B, C, D, H, W) by sampling and
@@ -503,7 +505,8 @@ class MultiLobeBlobAugmentation(MultiLobedBlobBase):
             RandInt(1, 5)
         sharpness : Sampler
             Upper bound for factor controlling the squareness of the blobs.
-            Note: +5 = mostly squares, 2>sharpness>4 = spheres, sharpness<2=stars.
+            Note: +5 = mostly squares, 2>sharpness>4 = spheres,
+            sharpness<2=stars.
             Default is Uniform(1, 3)
         jitter : float
             Maximum amount of jitter/raggedness to apply to the shape.
@@ -521,40 +524,55 @@ class MultiLobeBlobAugmentation(MultiLobedBlobBase):
         self.sharpness = cc.Uniform.make(make_range(1, sharpness))
         self.jitter = cc.Uniform.make(make_range(0, jitter))
         self.return_mask = return_mask
-
-        self.alpha = cc.Uniform.make(make_range(0.5, alpha))
-        self.intensity = cc.Uniform.make(make_range(0, intensity))
         self.device = device
-
         self.depth, self.height, self.width = self.shape
         self.imprint_tensor = torch.zeros(
             self.shape, dtype=torch.float32, device=self.device)
         self.current_label = 1
+        if augmentation is None:
+            self.augmentation = cc.RandomGaussianMixtureTransform(mu=0)
+        else:
+            self.augmentation = augmentation
 
-    def forward(self, x):
+        self.alpha = cc.Uniform.make(make_range(0.5, alpha))
+        self.intensity_shift = cc.Uniform.make(make_range(0, intensity_shift))
+        self.blender = Blender(
+            alpha=self.alpha,
+            intensity_shift=self.intensity_shift
+        )
+
+    def forward(self, background_intensities: torch.Tensor):
         """
         Apply blob augmentation to input tensor.
 
         Parameters
         ----------
-        x : torch.Tensor[float]
-            Input tensor of shape (B, C, D, H, W)
+        incoming_tensor : torch.Tensor[float]
+            Input tensor of shape (C, D, H, W)
 
         Returns
         -------
         blended_blobs : torch.Tensor[float]
             Blobs alpha-blended into background.
         """
-        blob_labels = self.make_shapes().unsqueeze(0).unsqueeze(0)
-        blob_mask = (blob_labels > 0).bool()
-        blob_intensities = TexturizeLabels(intensity=self.intensity)(
-            blob_labels)
-        blob_intensities[~blob_mask] = 0
-        blended_blobs = Blender()(
-            blob_intensities, x, blob_mask, alpha=self.alpha())
+        incoming_shape_labels = self.make_shapes()
+        incoming_shape_mask = (incoming_shape_labels > 0).bool().to(
+            self.device
+            )
+        if self.augmentation:
+            incoming_shape_labels = self.augmentation(incoming_shape_labels)
+            incoming_shape_labels[~incoming_shape_mask] = 0
+
+        blended = self.blender(
+            incoming_shape_labels.to(self.device),
+            background_intensities.to(self.device),
+            incoming_shape_mask.to(self.device)
+        )
+
         if self.return_mask:
-            return blended_blobs, blob_mask
-        return blended_blobs
+            return blended, incoming_shape_mask
+        else:
+            return blended
 
 # Example useage
 # x = torch.ones((1, 1, 128, 128, 128))
