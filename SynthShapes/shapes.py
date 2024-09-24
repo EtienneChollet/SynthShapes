@@ -489,7 +489,6 @@ class MultiLobeBlobAugmentation(MultiLobedBlobBase):
         Device to perform computations on.
     """
     def __init__(self,
-                 shape: list[int] = [128, 128, 128],
                  axis_length: Sampler = cc.RandInt(3, 6),
                  blob_density: Sampler = cc.Fixed(0.05),
                  n_lobes: Sampler = cc.RandInt(1, 5),
@@ -532,7 +531,6 @@ class MultiLobeBlobAugmentation(MultiLobedBlobBase):
             Device to perform computations on.
         """
         super(MultiLobedBlobBase, self).__init__()
-        self.shape = shape
         self.axis_length = cc.RandInt.make(make_range(3, axis_length))
         self.blob_density = cc.Uniform.make(make_range(0, blob_density))
         self.n_lobes = cc.RandInt.make(make_range(1, n_lobes))
@@ -540,9 +538,6 @@ class MultiLobeBlobAugmentation(MultiLobedBlobBase):
         self.jitter = cc.Uniform.make(make_range(0, jitter))
         self.return_mask = return_mask
         self.device = device
-        #self.depth, self.height, self.width = self.shape
-        #self.imprint_tensor = torch.zeros(
-        #    self.shape, dtype=torch.float32, device=self.device)
         self.current_label = 1
         if augmentation is None:
             self.augmentation = cc.RandomGaussianMixtureTransform(mu=0)
@@ -555,11 +550,6 @@ class MultiLobeBlobAugmentation(MultiLobedBlobBase):
             alpha=self.alpha,
             intensity_shift=self.intensity_shift
         )
-
-        #max_blobs = self.blob_density * (
-        #    torch.prod(torch.tensor(self.shape).cuda, 0)**0.5
-        #)
-        #self.n_blobs = cc.RandInt(1, max_blobs)
 
     def forward(self, background_intensities: torch.Tensor):
         """
