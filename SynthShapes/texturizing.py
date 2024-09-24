@@ -58,10 +58,7 @@ class LabelsToIntensities(Module):
         intensities = self.transform(labels)
         # Invert mask and zero all background values
         intensities[~label_mask] = 0
-
-        # Transform intentisites to desired range
-        scaler = MinMaxScaler(lower_bound=self.min, upper_bound=self.max)
-        intensities[label_mask] = scaler(intensities[label_mask])
+        
 
         return intensities
 
