@@ -42,9 +42,9 @@ class MultiLobedBlobBase(nn.Module):
         Device to perform computations on.
     """
     def __init__(self,
-                 shape: int = 128,
+                 shape: int = [128, 128, 128],
                  axis_length: Sampler = cc.RandInt(3, 6),
-                 n_blobs: Sampler = cc.RandInt(10, 25),
+                 blob_density: Sampler = cc.Fixed(0.05),
                  n_lobes: Sampler = cc.RandInt(1, 5),
                  sharpness: Sampler = cc.Uniform(1, 3),
                  jitter: Sampler = cc.Uniform(0, 0.5),
@@ -76,18 +76,15 @@ class MultiLobedBlobBase(nn.Module):
             Device to perform computations on.
         """
         super(MultiLobedBlobBase, self).__init__()
-        self.shape = [shape, shape, shape]
-        self.axis_length = cc.RandInt.make(make_range(3, axis_length))
-        self.n_blobs = cc.RandInt.make(make_range(1, n_blobs))
+        # self.shape = shape
+        self.axis_length = cc.RandInt.make(make_range(3, axis_length)),
+        self.blob_density = cc.Uniform.make(make_range(0, blob_density))
         self.n_lobes = cc.RandInt.make(make_range(1, n_lobes))
         self.sharpness = cc.Uniform.make(make_range(1, sharpness))
         self.jitter = cc.Uniform.make(make_range(0, jitter))
         self.device = device
-
         self.current_label = 1
-        self.depth, self.height, self.width = self.shape
-        self.imprint_tensor = torch.zeros(self.shape, dtype=torch.float32,
-                                          device=self.device)
+
 
     def sample_axis_lengths(self):
         """
@@ -308,7 +305,7 @@ class MultiLobedBlobBase(nn.Module):
         self.current_label += 1
         return mask
 
-    def make_shapes(self):
+    def make_shapes(self, shape):
         """
         Make shape labels.
 
@@ -317,11 +314,25 @@ class MultiLobedBlobBase(nn.Module):
         imprint_tensor : torch.Tensor[int]
             Blobs with unique integer labels.
         """
+        self.shape = shape
+        self.max_blobs = self.blob_density() * (
+            torch.prod(torch.tensor(self.shape).cuda(), 0)**0.5
+            )
+        self.max_blobs = torch.ceil(self.max_blobs).item()
+        self.n_blobs = cc.RandInt(self.max_blobs//2, self.max_blobs)
+
+        self.depth, self.height, self.width = self.shape
+        self.imprint_tensor = torch.zeros(
+            self.shape,
+            dtype=torch.float32,
+            device=self.device
+            )
+
         centers, axes_list = self.sample_nonoverlapping_geometries()
         for center, axes in zip(centers, axes_list):
             # Make tensor for blob (and all lobes)
             lobe_tensor = torch.zeros(
-                self.shape, dtype=torch.float32, device=self.device)
+                shape, dtype=torch.float32, device=self.device)
             # Make lobes one by one
             for _ in range(self.n_lobes()):
                 lobe_center_shift = torch.randint(
@@ -371,9 +382,10 @@ class MultiLobedBlobSampler(MultiLobedBlobBase):
         Device to perform computations on.
     """
     def __init__(self,
-                 shape: int = 128,
+                 shape: int = [128, 128, 128],
                  axis_length: Sampler = cc.RandInt(3, 6),
-                 n_blobs: Sampler = cc.RandInt(10, 25),
+                 blob_density: Sampler = cc.Fixed(0.05),
+                 # n_blobs: Sampler = cc.RandInt(10, 25),
                  n_lobes: Sampler = cc.RandInt(1, 5),
                  sharpness: Sampler = cc.Uniform(1, 3),
                  jitter: Sampler = cc.Uniform(0, 0.5),
@@ -408,14 +420,19 @@ class MultiLobedBlobSampler(MultiLobedBlobBase):
             Device to perform computations on.
         """
         super(MultiLobedBlobBase, self).__init__()
-        self.shape = [shape, shape, shape]
+        self.shape = shape
         self.axis_length = cc.RandInt.make(make_range(3, axis_length))
-        self.n_blobs = cc.RandInt.make(make_range(1, n_blobs))
+        self.blob_density = cc.Uniform.make(make_range(0, blob_density))
         self.n_lobes = cc.RandInt.make(make_range(1, n_lobes))
         self.sharpness = cc.Uniform.make(make_range(1, sharpness))
         self.jitter = cc.Uniform.make(make_range(0, jitter))
         self.return_mask = return_mask
         self.device = device
+
+        #max_blobs = self.blob_density * (
+        #    torch.prod(torch.tensor(self.shape).cuda, 0)**0.5
+        #)
+        #self.n_blobs = cc.RandInt(1, max_blobs)
 
         self.current_label = 1
         self.depth, self.height, self.width = self.shape
@@ -423,7 +440,7 @@ class MultiLobedBlobSampler(MultiLobedBlobBase):
             self.shape, dtype=torch.float32, device=self.device
             )
 
-    def forward(self):
+    def forward(self, shape):
         """
         Apply blob-sampling operation.
 
@@ -432,7 +449,7 @@ class MultiLobedBlobSampler(MultiLobedBlobBase):
         shapes : torch.tensor[int]
             Blobs with unique integer labels.
         """
-        blob_labels = self.make_shapes()
+        blob_labels = self.make_shapes(shape)
         if self.return_mask:
             blob_mask = (blob_labels > 0).bool().to(self.device)
             return blob_labels, blob_mask
@@ -472,9 +489,9 @@ class MultiLobeBlobAugmentation(MultiLobedBlobBase):
         Device to perform computations on.
     """
     def __init__(self,
-                 shape: int = 128,
+                 shape: list[int] = [128, 128, 128],
                  axis_length: Sampler = cc.RandInt(3, 6),
-                 n_blobs: Sampler = cc.RandInt(10, 25),
+                 blob_density: Sampler = cc.Fixed(0.05),
                  n_lobes: Sampler = cc.RandInt(1, 5),
                  sharpness: Sampler = cc.Uniform(1, 3),
                  jitter: Sampler = cc.Uniform(0, 0.5),
@@ -515,17 +532,17 @@ class MultiLobeBlobAugmentation(MultiLobedBlobBase):
             Device to perform computations on.
         """
         super(MultiLobedBlobBase, self).__init__()
-        self.shape = [shape, shape, shape]
+        self.shape = shape
         self.axis_length = cc.RandInt.make(make_range(3, axis_length))
-        self.n_blobs = cc.RandInt.make(make_range(1, n_blobs))
+        self.blob_density = cc.Uniform.make(make_range(0, blob_density))
         self.n_lobes = cc.RandInt.make(make_range(1, n_lobes))
         self.sharpness = cc.Uniform.make(make_range(1, sharpness))
         self.jitter = cc.Uniform.make(make_range(0, jitter))
         self.return_mask = return_mask
         self.device = device
-        self.depth, self.height, self.width = self.shape
-        self.imprint_tensor = torch.zeros(
-            self.shape, dtype=torch.float32, device=self.device)
+        #self.depth, self.height, self.width = self.shape
+        #self.imprint_tensor = torch.zeros(
+        #    self.shape, dtype=torch.float32, device=self.device)
         self.current_label = 1
         if augmentation is None:
             self.augmentation = cc.RandomGaussianMixtureTransform(mu=0)
@@ -538,6 +555,11 @@ class MultiLobeBlobAugmentation(MultiLobedBlobBase):
             alpha=self.alpha,
             intensity_shift=self.intensity_shift
         )
+
+        #max_blobs = self.blob_density * (
+        #    torch.prod(torch.tensor(self.shape).cuda, 0)**0.5
+        #)
+        #self.n_blobs = cc.RandInt(1, max_blobs)
 
     def forward(self, background_intensities: torch.Tensor):
         """
@@ -553,7 +575,8 @@ class MultiLobeBlobAugmentation(MultiLobedBlobBase):
         blended_blobs : torch.Tensor[float]
             Blobs alpha-blended into background.
         """
-        incoming_shape_labels = self.make_shapes()
+        shape = background_intensities.squeeze().shape
+        incoming_shape_labels = self.make_shapes(shape)
         incoming_shape_mask = (incoming_shape_labels > 0).bool().to(
             self.device
             )
