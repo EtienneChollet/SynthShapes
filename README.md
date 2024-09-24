@@ -2,9 +2,9 @@
 
 
 
-# Introduction
+# SynthShapes
 
-This this is a toolbox for generating randomized, semi-realistic shapes that can be used for biomedical image augmentation.
+SynthShapes is a PyTorch toolbox for generating synthetic 3D shapes, tailored specifically for augmenting biomedical imaging datasets. It allows users to create complex, realistic shapes for use in machine learning pipelines, especially when training data is scarce or needs augmentation.
 
 # Installation
 
