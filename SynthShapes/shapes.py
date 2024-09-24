@@ -319,10 +319,10 @@ class MultiLobedBlobBase(nn.Module):
         """
         centers, axes_list = self.sample_nonoverlapping_geometries()
         for center, axes in zip(centers, axes_list):
-            # meshgrid = self._meshgrid_origin_at_centroid(center)
+            # Make tensor for blob (and all lobes)
             lobe_tensor = torch.zeros(
                 self.shape, dtype=torch.float32, device=self.device)
-
+            # Make lobes one by one
             for _ in range(self.n_lobes()):
                 lobe_center_shift = torch.randint(
                     -axes[0]+1, axes[0]-1, (3,), device=self.device)
@@ -334,11 +334,8 @@ class MultiLobedBlobBase(nn.Module):
                 lobe_prob = self._make_lobe_prob(shifted_meshgrid, axes)
                 lobe = self._make_lobe_from_prob(lobe_prob)
                 lobe_tensor += lobe
-
-            # self.imprint_tensor += lobe_tensor
+            # Add all lobes to imprint tensor
             self.imprint_tensor[lobe_tensor > 0] = lobe_tensor[lobe_tensor > 0]
-            # Clip values to 1 for overlap regions
-            # self.imprint_tensor[self.imprint_tensor > 1] = 1
 
         return self.imprint_tensor.unsqueeze(0)
 
@@ -422,8 +419,9 @@ class MultiLobedBlobSampler(MultiLobedBlobBase):
 
         self.current_label = 1
         self.depth, self.height, self.width = self.shape
-        self.imprint_tensor = torch.zeros(self.shape, dtype=torch.float32,
-                                          device=self.device)
+        self.imprint_tensor = torch.zeros(
+            self.shape, dtype=torch.float32, device=self.device
+            )
 
     def forward(self):
         """
@@ -439,7 +437,7 @@ class MultiLobedBlobSampler(MultiLobedBlobBase):
             blob_mask = (blob_labels > 0).bool().to(self.device)
             return blob_labels, blob_mask
         else:
-            return blob_mask
+            return blob_labels
 
 
 class MultiLobeBlobAugmentation(MultiLobedBlobBase):
@@ -548,7 +546,7 @@ class MultiLobeBlobAugmentation(MultiLobedBlobBase):
         Parameters
         ----------
         incoming_tensor : torch.Tensor[float]
-            Input tensor of shape (C, D, H, W)
+            Background tensor to augment of shape (C, D, H, W)
 
         Returns
         -------
@@ -828,7 +826,7 @@ class TorusBlobBase(nn.Module):
             torus = self._make_torus_from_prob(torus_prob)
             self.imprint_tensor[torus > 0] = torus[torus > 0]
 
-        return self.imprint_tensor
+        return self.imprint_tensor.unsqueeze(0)
 
 
 class TorusBlobSampler(TorusBlobBase):
@@ -857,7 +855,8 @@ class TorusBlobSampler(TorusBlobBase):
     def __init__(self, major_radius_range=[10, 20], minor_radius_range=[3, 6],
                  n_blobs: Sampler = cc.RandInt(10, 25),
                  jitter: Sampler = cc.Uniform(0, 0.5),
-                 device='cuda', shape=128
+                 device: str = 'cuda', shape: int = 128,
+                 return_mask: bool = True
                  ):
         """
         PyTorch module to sample torus blob labels in a 3D tensor.
@@ -888,6 +887,7 @@ class TorusBlobSampler(TorusBlobBase):
         self.jitter = cc.Uniform.make(make_range(0, jitter))
         self.device = device
         self.shape = [shape, shape, shape]
+        self.return_mask = return_mask
         self.depth, self.height, self.width = self.shape
         self.n_blobs = cc.RandInt.make(make_range(1, n_blobs))
         self.imprint_tensor = torch.zeros(self.shape, dtype=torch.float32,
@@ -903,7 +903,12 @@ class TorusBlobSampler(TorusBlobBase):
         shapes : torch.Tensor[int]
             Tori with unique integer labels.
         """
-        return self.make_shapes()
+        labels = self.make_shapes()
+        if self.return_mask:
+            mask = (labels > 0).bool().to(self.device)
+            return labels, mask
+        else:
+            return labels
 
 
 class TorusBlobAugmentation(TorusBlobBase):
@@ -930,13 +935,17 @@ class TorusBlobAugmentation(TorusBlobBase):
     shape : int, optional
         Size of the 3D volume (assumed to be cubic). Default is 128.
     """
-    def __init__(self, major_radius_range=[10, 20], minor_radius_range=[3, 6],
+    def __init__(self,
+                 shape=128,
+                 major_radius_range=[10, 20],
+                 minor_radius_range=[3, 6],
                  n_blobs=cc.RandInt(10, 25),
                  jitter: Sampler = cc.Uniform(0, 0.5),
-                 device='cuda', shape=128,
+                 return_mask: bool = False,
                  alpha: Sampler = cc.Uniform(0.25, 0.75),
-                 intensity: float = 1,
-                 return_mask: bool = False
+                 intensity_shift: float = cc.Uniform(10, 20),
+                 augmentation=None,
+                 device='cuda',
                  ):
         super(TorusBlobBase, self).__init__()
         """
@@ -967,44 +976,63 @@ class TorusBlobAugmentation(TorusBlobBase):
         return_mask : bool
             Optionally return torus mask. Default is False
         """
+        self.shape = [shape, shape, shape]
         self.major_radius_range = major_radius_range
         self.minor_radius_range = minor_radius_range
-        self.jitter = cc.Uniform.make(make_range(0, jitter))
-        self.device = device
-        self.shape = [shape, shape, shape]
-        self.depth, self.height, self.width = self.shape
         self.n_blobs = cc.RandInt.make(make_range(1, n_blobs))
-        self.imprint_tensor = torch.zeros(self.shape, dtype=torch.float32,
-                                          device=self.device)
-        self.intensity = cc.Uniform.make(make_range(0, intensity))
-        self.alpha = cc.Uniform.make(make_range(0.5, alpha))
+        self.jitter = cc.Uniform.make(make_range(0, jitter))
         self.return_mask = return_mask
+        self.device = device
+        self.depth, self.height, self.width = self.shape
+        self.imprint_tensor = torch.zeros(
+            self.shape, dtype=torch.float32, device=self.device
+            )
         self.current_label = 1
+        if augmentation is None:
+            self.augmentation = cc.RandomGaussianMixtureTransform(mu=0)
+        else:
+            self.augmentation = augmentation
 
-    def forward(self, x):
+        self.alpha = cc.Uniform.make(make_range(0.5, alpha))
+        self.intensity_shift = cc.Uniform.make(make_range(0, intensity_shift))
+        self.blender = Blender(
+            alpha=self.alpha,
+            intensity_shift=self.intensity_shift
+        )
+
+    def forward(self, background_intensities: torch.Tensor):
         """
-        Apply the torus augmentation layer.
+        Apply torus augmentation to input tensor.
 
         Parameters
         ----------
-        x : torch.Tensor[float]
-            Input tensor of shape (B, C, D, H, W)
+        background_intensities : torch.Tensor[float]
+            Background tensor to augment of shape (C, D, H, W)
 
         Returns
         -------
         blended_tori : torch.Tensor[float]
             Tori alpha-blended into background.
         """
-        blob_labels = self.make_shapes().unsqueeze(0).unsqueeze(0)
-        torus_mask = (blob_labels > 0).bool()
-        torus_intensities = TexturizeLabels(intensity=self.intensity)(
-            blob_labels)
-        torus_intensities[~torus_mask] = 0
-        blended_tori = Blender()(
-            torus_intensities, x, torus_mask, alpha=self.alpha())
+
+        incoming_shape_labels = self.make_shapes()
+        incoming_shape_mask = (incoming_shape_labels > 0).bool().to(
+            self.device
+            )
+        if self.augmentation:
+            incoming_shape_labels = self.augmentation(incoming_shape_labels)
+            incoming_shape_labels[~incoming_shape_mask] = 0
+
+        blended = self.blender(
+            incoming_shape_labels.to(self.device),
+            background_intensities.to(self.device),
+            incoming_shape_mask.to(self.device)
+        )
+
         if self.return_mask:
-            return blended_tori, torus_mask
-        return blended_tori
+            return blended, incoming_shape_mask
+        else:
+            return blended
 
 # Example useage
 # x = torch.ones((1, 1, 128, 128, 128))
