@@ -1,4 +1,6 @@
 __all__ = [
+    'MultiLobedBlobConfig',
+    'MultiLobedBlobBase',
     'MultiLobedBlobSampler',
     'TorusBlobSampler'
 ]
@@ -9,10 +11,56 @@ from torch import nn
 import cornucopia as cc
 from cornucopia import Sampler
 from cornucopia.random import make_range
+from dataclasses import dataclass
 
 # Custom Imports
 from SynthShapes.texturizing import TexturizeLabels
 from SynthShapes.blending import Blender
+
+
+@dataclass
+class MultiLobedBlobConfig:
+    """
+    Configuration container for MultiLobedBlobBase.
+
+    Attributes
+    ----------
+    shape : list of int, optional
+        Size of the 3D volume (assumed to be cubic). Default is [128, 128, 128].
+    axis_length : Sampler, optional
+        Range of the lengths for any given axis of the blob. Default is RandInt(3, 6).
+    blob_density : Sampler, optional
+        Density of blobs in the volume. Default is Fixed(0.05).
+    n_blobs : Sampler, optional
+        Maximum number of multi-lobed blobs. Default is RandInt(10, 25).
+    n_lobes : Sampler, optional
+        Sampler range for the number of lobes per blob. Default is RandInt(1, 5).
+    sharpness : Sampler, optional
+        Upper bound for factor controlling the squareness of the blobs.
+        Note: +5 = mostly squares, 2 < sharpness < 4 = spheres, sharpness < 2 = stars.
+        Default is Uniform(1, 3).
+    jitter : Sampler, optional
+        Maximum amount of jitter/raggedness to apply to the shape. Default is Uniform(0, 0.5).
+    device : str, optional
+        Device to perform computations on. Default is 'cuda'.
+    """
+    # shape: list = field(default_factory=lambda: [128, 128, 128])
+    axis_length: Sampler = cc.RandInt.make(make_range(2, cc.RandInt(3, 6)))
+    blob_density: Sampler = cc.Fixed(0.05)
+    n_blobs: Sampler = cc.RandInt(10, 25)
+    n_lobes: Sampler = cc.RandInt(1, 5)
+    sharpness: Sampler = cc.Uniform(1, 3)
+    jitter: Sampler = cc.Uniform(0, 0.5)
+    return_mask: bool = True
+    device: str = 'cuda'
+
+
+@dataclass
+class BlendingConfig:
+    base_augmentation: nn.Sequential
+    incoming_label_augmentation: nn.Sequential
+    alpha: float = 0.5
+    intensity_shift: float = 1
 
 
 class MultiLobedBlobBase(nn.Module):
@@ -21,70 +69,21 @@ class MultiLobedBlobBase(nn.Module):
 
     Parameters
     ----------
-    shape : int
-        Size of the 3D volume (assumed to be cubic). Default is 128.
-    axis_length : Sampler
-        Range of the lengths for any given axis of the blob. Default is
-        RandInt(3, 6)
-    n_blobs : Sampler
-        Maximum number of multi-lobed blobs. Default is RandInt(10, 25)
-    n_lobes : Sampler
-        Sampler range for the number of lobes per blob. Default is
-        RandInt(1, 5)
-    sharpness : Sampler
-        Upper bound for factor controlling the squareness of the blobs.
-        Note: +5 = mostly squares, 2>sharpness>4 = spheres, sharpness<2=stars.
-        Default is Uniform(1, 3)
-    jitter : float
-        Maximum amount of jitter/raggedness to apply to the shape.
-        Default is Uniform(0, 0.5)
-    device : str
-        Device to perform computations on.
+    config : MultiLobedBlobConfig
+        Configuration container for blob parameters.
     """
-    def __init__(self,
-                 shape: int = [128, 128, 128],
-                 axis_length: Sampler = cc.RandInt(3, 6),
-                 blob_density: Sampler = cc.Fixed(0.05),
-                 n_lobes: Sampler = cc.RandInt(1, 5),
-                 sharpness: Sampler = cc.Uniform(1, 3),
-                 jitter: Sampler = cc.Uniform(0, 0.5),
-                 device='cuda'):
+    def __init__(self, config: MultiLobedBlobConfig = MultiLobedBlobConfig):
         """
-        Base class for multi-lobed blob operations.
+        Base module for multi-lobed blob operations.
 
         Parameters
         ----------
-        shape : int
-            Size of the 3D volume (assumed to be cubic). Default is 128.
-        axis_length : Sampler
-            Range of the lengths for any given axis of the blob. Default is
-            RandInt(3, 6)
-        n_blobs : Sampler
-            Maximum number of multi-lobed blobs. Default is RandInt(10, 25)
-        n_lobes : Sampler
-            Sampler range for the number of lobes per blob. Default is
-            RandInt(1, 5)
-        sharpness : Sampler
-            Upper bound for factor controlling the squareness of the blobs.
-            Note: +5 = mostly squares, 2>sharpness>4 = spheres,
-            sharpness<2=stars.
-            Default is Uniform(1, 3)
-        jitter : float
-            Maximum amount of jitter/raggedness to apply to the shape.
-            Default is Uniform(0, 0.5)
-        device : str
-            Device to perform computations on.
+        config : MultiLobedBlobConfig
+            Configuration container for blob parameters.
         """
         super(MultiLobedBlobBase, self).__init__()
-        # self.shape = shape
-        self.axis_length = cc.RandInt.make(make_range(3, axis_length)),
-        self.blob_density = cc.Uniform.make(make_range(0, blob_density))
-        self.n_lobes = cc.RandInt.make(make_range(1, n_lobes))
-        self.sharpness = cc.Uniform.make(make_range(1, sharpness))
-        self.jitter = cc.Uniform.make(make_range(0, jitter))
-        self.device = device
+        self.config = config
         self.current_label = 1
-
 
     def sample_axis_lengths(self):
         """
@@ -96,7 +95,11 @@ class MultiLobedBlobBase(nn.Module):
             Axis lengths of the blob (D, H, W).
         """
         axis_lengths = torch.tensor(
-            [self.axis_length(), self.axis_length(), self.axis_length()]
+            [
+                self.config.axis_length(),
+                self.config.axis_length(),
+                self.config.axis_length()
+            ]
         )
         return axis_lengths
 
@@ -117,16 +120,16 @@ class MultiLobedBlobBase(nn.Module):
         centroid_coords = (
             torch.randint(
                 axis_lengths[0],
-                self.depth - axis_lengths[0],
-                (1,), device=self.device).item(),
+                self.shape[0] - axis_lengths[0],
+                (1,), device=self.config.device).item(),
             torch.randint(
                 axis_lengths[1],
-                self.height - axis_lengths[1],
-                (1,), device=self.device).item(),
+                self.shape[1] - axis_lengths[1],
+                (1,), device=self.config.device).item(),
             torch.randint(
                 axis_lengths[2],
-                self.width - axis_lengths[2],
-                (1,), device=self.device).item()
+                self.shape[2] - axis_lengths[2],
+                (1,), device=self.config.device).item()
             )
         return centroid_coords
 
@@ -163,7 +166,7 @@ class MultiLobedBlobBase(nn.Module):
                 torch.tensor((centroid_coords[0] - c[0]) ** 2
                              + (centroid_coords[1] - c[1]) ** 2
                              + (centroid_coords[2] - c[2]) ** 2,
-                             device=self.device)
+                             device=self.config.device)
             )
             # Ensure the euclidean distance between centroids is larger than
             # the sum of the largest axes of both blobs, ensuring no overlap.
@@ -237,9 +240,15 @@ class MultiLobedBlobBase(nn.Module):
         # is the origin of the coordinate system, then shift the origin to the
         # coordinates of the centroid by subtracting them out.
         meshgrid = torch.meshgrid(
-            torch.arange(self.depth, device=self.device) - center_coords[0],
-            torch.arange(self.height, device=self.device) - center_coords[1],
-            torch.arange(self.width, device=self.device) - center_coords[2],
+            torch.arange(
+                self.shape[0], device=self.config.device
+                ) - center_coords[0],
+            torch.arange(
+                self.shape[1], device=self.config.device
+                ) - center_coords[1],
+            torch.arange(
+                self.shape[2], device=self.config.device
+                ) - center_coords[2],
             indexing='ij')
         return meshgrid
 
@@ -273,19 +282,24 @@ class MultiLobedBlobBase(nn.Module):
         # Create noise for the entire distance map by sampling a uniform
         # distribution centered at 0 and whose stdev depends on self.jitter.
         # Prevents the blob from being perfectly symmetric.
-        noise = torch.normal(0, self.jitter(),
-                             size=[self.depth, self.height, self.width],
-                             device=self.device)
+        noise = torch.normal(0,
+                             self.config.jitter(),
+                             size=[
+                                 self.shape[0],
+                                 self.shape[1],
+                                 self.shape[2]
+                                 ],
+                             device=self.config.device)
         # Calculates probability of a voxel belonging to a lobe at each point.
         # The absolute values of these ratios are raised to the power of
         # sharpness, which controls how quickly the probability drops off as
         # you move away from the centroid.
         lobe_prob = (torch.abs(meshgrid[0] / (axis_lengths[0] + noise)
-                               ) ** self.sharpness() +
+                               ) ** self.config.sharpness() +
                      torch.abs(meshgrid[1] / (axis_lengths[1] + noise)
-                               ) ** self.sharpness() +
+                               ) ** self.config.sharpness() +
                      torch.abs(meshgrid[2] / (axis_lengths[2] + noise)
-                               ) ** self.sharpness())
+                               ) ** self.config.sharpness())
         return lobe_prob
 
     def _make_lobe_from_prob(self, lobe_prob):
@@ -315,28 +329,30 @@ class MultiLobedBlobBase(nn.Module):
             Blobs with unique integer labels.
         """
         self.shape = shape
-        self.max_blobs = self.blob_density() * (
+        self.max_blobs = self.config.blob_density() * (
             torch.prod(torch.tensor(self.shape).cuda(), 0)**0.5
             )
         self.max_blobs = torch.ceil(self.max_blobs).item()
-        self.n_blobs = cc.RandInt(self.max_blobs//2, self.max_blobs)
+        self.n_blobs = cc.RandInt(
+            self.max_blobs//2, self.max_blobs
+            )
 
-        self.depth, self.height, self.width = self.shape
+        # self.depth, self.height, self.width = self.shape
         self.imprint_tensor = torch.zeros(
             self.shape,
             dtype=torch.float32,
-            device=self.device
+            device=self.config.device
             )
 
         centers, axes_list = self.sample_nonoverlapping_geometries()
         for center, axes in zip(centers, axes_list):
             # Make tensor for blob (and all lobes)
             lobe_tensor = torch.zeros(
-                shape, dtype=torch.float32, device=self.device)
+                shape, dtype=torch.float32, device=self.config.device)
             # Make lobes one by one
-            for _ in range(self.n_lobes()):
+            for _ in range(self.config.n_lobes()):
                 lobe_center_shift = torch.randint(
-                    -axes[0]+1, axes[0]-1, (3,), device=self.device)
+                    -axes[0]+1, axes[0]-1, (3,), device=self.config.device)
                 shifted_center = (center[0] + lobe_center_shift[0],
                                   center[1] + lobe_center_shift[1],
                                   center[2] + lobe_center_shift[2])
@@ -359,86 +375,23 @@ class MultiLobedBlobSampler(MultiLobedBlobBase):
 
     Parameters
     ----------
-    shape : int
-        Size of the 3D volume (assumed to be cubic). Default is 128.
-    axis_length : Sampler
-        Range of the lengths for any given axis of the blob. Default is
-        RandInt(3, 6)
-    n_blobs : Sampler
-        Maximum number of multi-lobed blobs. Default is RandInt(10, 25)
-    n_lobes : Sampler
-        Sampler range for the number of lobes per blob. Default is
-        RandInt(1, 5)
-    sharpness : Sampler
-        Upper bound for factor controlling the squareness of the blobs.
-        Note: +5 = mostly squares, 2>sharpness>4 = spheres, sharpness<2=stars.
-        Default is Uniform(1, 3)
-    jitter : float
-        Maximum amount of jitter/raggedness to apply to the shape.
-        Default is Uniform(0, 0.5)
-    return_mask : bool
-        Optionally return mask.
-    device : str
-        Device to perform computations on.
+    config : MultiLobedBlobConfig
+        Configuration container for blob parameters.
     """
-    def __init__(self,
-                 shape: int = [128, 128, 128],
-                 axis_length: Sampler = cc.RandInt(3, 6),
-                 blob_density: Sampler = cc.Fixed(0.05),
-                 # n_blobs: Sampler = cc.RandInt(10, 25),
-                 n_lobes: Sampler = cc.RandInt(1, 5),
-                 sharpness: Sampler = cc.Uniform(1, 3),
-                 jitter: Sampler = cc.Uniform(0, 0.5),
-                 return_mask: bool = False,
-                 device: str = 'cuda'):
+    def __init__(self, config: MultiLobedBlobConfig = MultiLobedBlobConfig):
         """
         PyTorch module to sample multi-lobed blob labels in a 3D tensor.
 
+        Inherits from MultiLobedBlobBase.
+
         Parameters
         ----------
-        shape : int
-            Size of the 3D volume (assumed to be cubic). Default is 128.
-        axis_length : Sampler
-            Range of the lengths for any given axis of the blob. Default is
-            RandInt(3, 6)
-        n_blobs : Sampler
-            Maximum number of multi-lobed blobs. Default is RandInt(10, 25)
-        n_lobes : Sampler
-            Sampler range for the number of lobes per blob. Default is
-            RandInt(1, 5)
-        sharpness : Sampler
-            Upper bound for factor controlling the squareness of the blobs.
-            Note: +5 = mostly squares, 2>sharpness>4 = spheres,
-            sharpness<2=stars.
-            Default is Uniform(1, 3)
-        jitter : float
-            Maximum amount of jitter/raggedness to apply to the shape.
-            Default is Uniform(0, 0.5)
-        return_mask : bool
-            Optionally return mask.
-        device : str
-            Device to perform computations on.
+        config : MultiLobedBlobConfig
+            Configuration container for blob parameters.
         """
         super(MultiLobedBlobBase, self).__init__()
-        self.shape = shape
-        self.axis_length = cc.RandInt.make(make_range(3, axis_length))
-        self.blob_density = cc.Uniform.make(make_range(0, blob_density))
-        self.n_lobes = cc.RandInt.make(make_range(1, n_lobes))
-        self.sharpness = cc.Uniform.make(make_range(1, sharpness))
-        self.jitter = cc.Uniform.make(make_range(0, jitter))
-        self.return_mask = return_mask
-        self.device = device
-
-        #max_blobs = self.blob_density * (
-        #    torch.prod(torch.tensor(self.shape).cuda, 0)**0.5
-        #)
-        #self.n_blobs = cc.RandInt(1, max_blobs)
-
+        self.config = config
         self.current_label = 1
-        self.depth, self.height, self.width = self.shape
-        self.imprint_tensor = torch.zeros(
-            self.shape, dtype=torch.float32, device=self.device
-            )
 
     def forward(self, shape):
         """
@@ -450,8 +403,8 @@ class MultiLobedBlobSampler(MultiLobedBlobBase):
             Blobs with unique integer labels.
         """
         blob_labels = self.make_shapes(shape)
-        if self.return_mask:
-            blob_mask = (blob_labels > 0).bool().to(self.device)
+        if self.config.return_mask:
+            blob_mask = (blob_labels > 0).bool().to(self.config.device)
             return blob_labels, blob_mask
         else:
             return blob_labels
@@ -459,85 +412,35 @@ class MultiLobedBlobSampler(MultiLobedBlobBase):
 
 class MultiLobeBlobAugmentation(MultiLobedBlobBase):
     """
-    PyTorch module to augment 3D data (B, C, D, H, W) by sampling and
+    PyTorch module to augment 3D data (C, D, H, W) by sampling and
     alpha-blending multi-lobed blobs.
 
     Inherits from MultiLobedBlobBase.
 
     Parameters
     ----------
-    shape : int
-        Size of the 3D volume (assumed to be cubic). Default is 128.
-    axis_length : Sampler
-        Range of the lengths for any given axis of the blob. Default is
-        RandInt(3, 6)
-    n_blobs : Sampler
-        Maximum number of multi-lobed blobs. Default is RandInt(10, 25)
-    n_lobes : Sampler
-        Sampler range for the number of lobes per blob. Default is
-        RandInt(1, 5)
-    sharpness : Sampler
-        Upper bound for factor controlling the squareness of the blobs.
-        Note: +5 = mostly squares, 2>sharpness>4 = spheres, sharpness<2=stars.
-        Default is Uniform(1, 3)
-    jitter : float
-        Maximum amount of jitter/raggedness to apply to the shape.
-        Default is Uniform(0, 0.5)
-    return_mask : bool
-        Optionally return mask.
-    device : str
-        Device to perform computations on.
+    config : MultiLobedBlobConfig
+        Configuration container for blob parameters.
     """
     def __init__(self,
-                 axis_length: Sampler = cc.RandInt(3, 6),
-                 blob_density: Sampler = cc.Fixed(0.05),
-                 n_lobes: Sampler = cc.RandInt(1, 5),
-                 sharpness: Sampler = cc.Uniform(1, 3),
-                 jitter: Sampler = cc.Uniform(0, 0.5),
-                 return_mask: bool = False,
+                 config: MultiLobedBlobConfig = MultiLobedBlobConfig,
                  alpha: Sampler = cc.Uniform(0.25, 0.75),
                  intensity_shift: float = cc.Uniform(10, 20),
                  augmentation=None,
                  device='cuda'):
         """
-        PyTorch module to augment 3D data (B, C, D, H, W) by sampling and
+        PyTorch module to augment 3D data (C, D, H, W) by sampling and
         alpha-blending multi-lobed blobs.
 
         MultiLobedBlobBase.
 
         Parameters
         ----------
-        shape : int
-            Size of the 3D volume (assumed to be cubic). Default is 128.
-        axis_length : Sampler
-            Range of the lengths for any given axis of the blob. Default is
-            RandInt(3, 6)
-        n_blobs : Sampler
-            Maximum number of multi-lobed blobs. Default is RandInt(10, 25)
-        n_lobes : Sampler
-            Sampler range for the number of lobes per blob. Default is
-            RandInt(1, 5)
-        sharpness : Sampler
-            Upper bound for factor controlling the squareness of the blobs.
-            Note: +5 = mostly squares, 2>sharpness>4 = spheres,
-            sharpness<2=stars.
-            Default is Uniform(1, 3)
-        jitter : float
-            Maximum amount of jitter/raggedness to apply to the shape.
-            Default is Uniform(0, 0.5)
-        return_mask : bool
-            Optionally return mask.
-        device : str
-            Device to perform computations on.
+        config : MultiLobedBlobConfig
+            Configuration container for blob parameters.
         """
         super(MultiLobedBlobBase, self).__init__()
-        self.axis_length = cc.RandInt.make(make_range(3, axis_length))
-        self.blob_density = cc.Uniform.make(make_range(0, blob_density))
-        self.n_lobes = cc.RandInt.make(make_range(1, n_lobes))
-        self.sharpness = cc.Uniform.make(make_range(1, sharpness))
-        self.jitter = cc.Uniform.make(make_range(0, jitter))
-        self.return_mask = return_mask
-        self.device = device
+        self.config = config
         self.current_label = 1
         if augmentation is None:
             self.augmentation = cc.RandomGaussianMixtureTransform(mu=0)
@@ -568,19 +471,19 @@ class MultiLobeBlobAugmentation(MultiLobedBlobBase):
         shape = background_intensities.squeeze().shape
         incoming_shape_labels = self.make_shapes(shape)
         incoming_shape_mask = (incoming_shape_labels > 0).bool().to(
-            self.device
+            self.config.device
             )
         if self.augmentation:
             incoming_shape_labels = self.augmentation(incoming_shape_labels)
             incoming_shape_labels[~incoming_shape_mask] = 0
 
         blended = self.blender(
-            incoming_shape_labels.to(self.device),
-            background_intensities.to(self.device),
-            incoming_shape_mask.to(self.device)
+            incoming_shape_labels.to(self.config.device),
+            background_intensities.to(self.config.device),
+            incoming_shape_mask.to(self.config.device)
         )
 
-        if self.return_mask:
+        if self.config.return_mask:
             return blended, incoming_shape_mask
         else:
             return blended
