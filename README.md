@@ -25,7 +25,7 @@ Now let's install install SynthShapes from pypi! It's as easy as that!
 pip install SynthShapes
 ```
 
-# Useage
+# Usage
 
 ```python
 import torch
