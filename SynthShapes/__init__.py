@@ -1,28 +1,23 @@
 """
-This package is a versatile deep-learning toolbox for PyTorch,
-tailored to researchers working with N-dimensional vision problems,
-and more specifically medial imaging problems.
-
-It is intended to provide building blocks for a wide variety of
-architectures, as well as a set of pre-defined backbones, as well as
-a few task-specific models (segmentation, registration, synthesis, ...).
-
-It will not provide domain-specific tools with dedicated pre- and post-
-processing pipelines. However, such high-level tools can be implemented
-using this toolbox.
+SynthShapes is a primitive yet powerful PyTorch-based toolbox designed to
+generate synthetic 3D shapes, tailored specifically for augmenting biomedical
+imaging datasets. It is built to address the challenges faced in machine
+learning pipelines for biomedical imaging, such as limited availability of
+annotated data, the need for diverse training datasets, and the necessity of
+domain-specific augmentations.
 
 Modules
 -------
 blending
-    Task-specific models.
+    Tools for alpha-blending tensors.
 filters
-    Task-agnostic architectures to use as backbones in models.
+    Kernel-based spatial filters/transformations.
 hist
-    Building blocks for backbones and models.
+    Modules to map intensity histograms to one another.
 shapes
-    Differentiable functions to optimize during training.
+    Augmentation layers for incorporating synthetic shapes into 3D images.
 texturizing
-    Non-differentiable functions to compute during validation.
+    Tools to apply textures to label maps.
 utils
-    Tools to train networks.
+    General-purpose utilities for comon operations.
 """

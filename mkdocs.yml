@@ -1,10 +1,15 @@
 site_name: SynthShapes
 nav:
   - Home: index.md
-  - About: about.md
+  - Quick Start: quickstart.md
   - API:
     - SynthShapes: api/SynthShapes.md
+    - SynthShapes.blending: api/blending.md
+    - SynthShapes.filters: api/filters.md
+    - SynthShapes.hist: api/hist.md
+    - SynthShapes.texturizing: api/texturizing.md
     - SynthShapes.shapes: api/shapes.md
+    
 theme: material
 
 plugins:

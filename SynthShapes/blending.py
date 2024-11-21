@@ -1,3 +1,9 @@
+"""
+## Overview 
+
+The `Blender` module contains tools for alpha-blending tensors.
+"""
+
 __all__ = [
     'Blender'
 ]
@@ -17,7 +23,8 @@ class Blender(Module):
         intensity_shift: float = 10
     ):
         """
-        Blend tensors (shapes into image) using blending parameter.
+        [`nn.Module`][torch.nn.Module] To alpha blend two tensors according to
+        the blending parameter `alpha`.
 
         Parameters
         ----------
@@ -37,7 +44,8 @@ class Blender(Module):
         mask: torch.Tensor
     ):
         """
-        Perform blending operation.
+        Forward pass of `Blender` to apply the blending operation and return
+        the blended tensor.
 
         Parameters
         ----------
@@ -46,9 +54,6 @@ class Blender(Module):
             ID).
         background : tensor
             The intensity image (tensor) to blend shapes into.
-        alpha : float
-            Weight of the shape tensor. Larger magnitude = more blob character.
-            Tip: alpha > 1 maintains blob texture well.
         """
         # Sample params
         alpha = self.alpha()
