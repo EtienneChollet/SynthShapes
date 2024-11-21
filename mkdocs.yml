@@ -1,0 +1,29 @@
+site_name: SynthShapes
+nav:
+  - Home: index.md
+  - About: about.md
+  - API:
+    - SynthShapes: api/SynthShapes.md
+theme: material
+
+plugins:
+# - mkdocs-jupyter
+- search
+- autorefs
+- mkdocstrings:
+    handlers:
+      python:
+        paths: [.]
+        import:
+        - https://pytorch.org/docs/stable/objects.inv
+        - https://numpy.org/doc/stable/objects.inv
+        options:
+          docstring_style: numpy
+          docstring_section_style: spacy
+          docstring_options:
+            allow_section_blank_line: True
+          merge_init_into_class: True
+          separate_signature: True
+          members_order: source
+          show_source: True
+          show_root_heading: True
