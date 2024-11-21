@@ -4,6 +4,7 @@ nav:
   - About: about.md
   - API:
     - SynthShapes: api/SynthShapes.md
+    - SynthShapes.shapes: api/shapes.md
 theme: material
 
 plugins:
