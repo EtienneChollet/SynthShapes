@@ -1,0 +1,495 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="Python" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shapes &mdash; SynthShapes  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=1e580bb1"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Texturizing" href="SynthShapes.texturizing.html" />
+    <link rel="prev" title="Hist" href="SynthShapes.hist.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            SynthShapes
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="SynthShapes.html">SynthShapes Package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="SynthShapes.blending.html">Blending</a></li>
+<li class="toctree-l1"><a class="reference internal" href="SynthShapes.filters.html">Filters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="SynthShapes.hist.html">Hist</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Shapes</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#SynthShapes.shapes.MultiLobedBlobBase"><code class="docutils literal notranslate"><span class="pre">MultiLobedBlobBase</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#SynthShapes.shapes.MultiLobedBlobBase.__init__"><code class="docutils literal notranslate"><span class="pre">MultiLobedBlobBase.__init__()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#SynthShapes.shapes.MultiLobedBlobBase.check_overlap"><code class="docutils literal notranslate"><span class="pre">MultiLobedBlobBase.check_overlap()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#SynthShapes.shapes.MultiLobedBlobBase.make_shapes"><code class="docutils literal notranslate"><span class="pre">MultiLobedBlobBase.make_shapes()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#SynthShapes.shapes.MultiLobedBlobBase.sample_axis_lengths"><code class="docutils literal notranslate"><span class="pre">MultiLobedBlobBase.sample_axis_lengths()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#SynthShapes.shapes.MultiLobedBlobBase.sample_centroid_coords"><code class="docutils literal notranslate"><span class="pre">MultiLobedBlobBase.sample_centroid_coords()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#SynthShapes.shapes.MultiLobedBlobBase.sample_nonoverlapping_geometries"><code class="docutils literal notranslate"><span class="pre">MultiLobedBlobBase.sample_nonoverlapping_geometries()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#SynthShapes.shapes.MultiLobedBlobConfig"><code class="docutils literal notranslate"><span class="pre">MultiLobedBlobConfig</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#SynthShapes.shapes.MultiLobedBlobConfig.shape"><code class="docutils literal notranslate"><span class="pre">MultiLobedBlobConfig.shape</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#SynthShapes.shapes.MultiLobedBlobConfig.axis_length"><code class="docutils literal notranslate"><span class="pre">MultiLobedBlobConfig.axis_length</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#SynthShapes.shapes.MultiLobedBlobConfig.blob_density"><code class="docutils literal notranslate"><span class="pre">MultiLobedBlobConfig.blob_density</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#SynthShapes.shapes.MultiLobedBlobConfig.n_blobs"><code class="docutils literal notranslate"><span class="pre">MultiLobedBlobConfig.n_blobs</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#SynthShapes.shapes.MultiLobedBlobConfig.n_lobes"><code class="docutils literal notranslate"><span class="pre">MultiLobedBlobConfig.n_lobes</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#SynthShapes.shapes.MultiLobedBlobConfig.sharpness"><code class="docutils literal notranslate"><span class="pre">MultiLobedBlobConfig.sharpness</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#SynthShapes.shapes.MultiLobedBlobConfig.jitter"><code class="docutils literal notranslate"><span class="pre">MultiLobedBlobConfig.jitter</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#SynthShapes.shapes.MultiLobedBlobConfig.device"><code class="docutils literal notranslate"><span class="pre">MultiLobedBlobConfig.device</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id0"><code class="docutils literal notranslate"><span class="pre">MultiLobedBlobConfig.axis_length</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id1"><code class="docutils literal notranslate"><span class="pre">MultiLobedBlobConfig.blob_density</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id2"><code class="docutils literal notranslate"><span class="pre">MultiLobedBlobConfig.device</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id3"><code class="docutils literal notranslate"><span class="pre">MultiLobedBlobConfig.jitter</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id4"><code class="docutils literal notranslate"><span class="pre">MultiLobedBlobConfig.n_blobs</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id5"><code class="docutils literal notranslate"><span class="pre">MultiLobedBlobConfig.n_lobes</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#SynthShapes.shapes.MultiLobedBlobConfig.return_mask"><code class="docutils literal notranslate"><span class="pre">MultiLobedBlobConfig.return_mask</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id6"><code class="docutils literal notranslate"><span class="pre">MultiLobedBlobConfig.sharpness</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#SynthShapes.shapes.MultiLobedBlobSampler"><code class="docutils literal notranslate"><span class="pre">MultiLobedBlobSampler</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#SynthShapes.shapes.MultiLobedBlobSampler.__init__"><code class="docutils literal notranslate"><span class="pre">MultiLobedBlobSampler.__init__()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#SynthShapes.shapes.MultiLobedBlobSampler.forward"><code class="docutils literal notranslate"><span class="pre">MultiLobedBlobSampler.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#SynthShapes.shapes.TorusBlobSampler"><code class="docutils literal notranslate"><span class="pre">TorusBlobSampler</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#SynthShapes.shapes.TorusBlobSampler.__init__"><code class="docutils literal notranslate"><span class="pre">TorusBlobSampler.__init__()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#SynthShapes.shapes.TorusBlobSampler.forward"><code class="docutils literal notranslate"><span class="pre">TorusBlobSampler.forward()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="SynthShapes.texturizing.html">Texturizing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="SynthShapes.utils.html">Utils</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">SynthShapes</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Shapes</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/source/SynthShapes.shapes.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-SynthShapes.shapes">
+<span id="shapes"></span><h1>Shapes<a class="headerlink" href="#module-SynthShapes.shapes" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="SynthShapes.shapes.MultiLobedBlobBase">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">SynthShapes.shapes.</span></span><span class="sig-name descname"><span class="pre">MultiLobedBlobBase</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config=&lt;class</span> <span class="pre">'SynthShapes.shapes.MultiLobedBlobConfig'&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/SynthShapes/shapes.html#MultiLobedBlobBase"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#SynthShapes.shapes.MultiLobedBlobBase" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></p>
+<p>Base module for multi-lobed blob operations.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="SynthShapes.shapes.MultiLobedBlobBase.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config=&lt;class</span> <span class="pre">'SynthShapes.shapes.MultiLobedBlobConfig'&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/SynthShapes/shapes.html#MultiLobedBlobBase.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#SynthShapes.shapes.MultiLobedBlobBase.__init__" title="Link to this definition"></a></dt>
+<dd><p>Base module for multi-lobed blob operations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>config</strong> (<a class="reference internal" href="#SynthShapes.shapes.MultiLobedBlobConfig" title="SynthShapes.shapes.MultiLobedBlobConfig"><em>MultiLobedBlobConfig</em></a>) -- Configuration container for blob parameters.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="SynthShapes.shapes.MultiLobedBlobBase.check_overlap">
+<span class="sig-name descname"><span class="pre">check_overlap</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axis_lengths</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">centroid_coords</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axes_list</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">centers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/SynthShapes/shapes.html#MultiLobedBlobBase.check_overlap"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#SynthShapes.shapes.MultiLobedBlobBase.check_overlap" title="Link to this definition"></a></dt>
+<dd><p>Check if the newly sampled blob overlaps with existing blobs.</p>
+<p>This function computes the euclidean distance between the centroid of
+the new blobs and those of the existing blobs. The distance is
+compared to the sum of the largest axes of the blob, to ensure it is
+larger, ensuring no overlap exists between the blobs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>axis_lengths</strong> (<em>torch.Tensor</em><em>[</em><em>int</em><em>, </em><em>int</em><em>, </em><em>int</em><em>]</em>) -- Axis lengths of the new blob (depth, height, width).</p></li>
+<li><p><strong>centroid_coords</strong> (<em>list</em>) -- Coordinates of the new blob's centroid (depth, height, width).</p></li>
+<li><p><strong>axes_list</strong> (<em>list</em>) -- A list of tuples representing the lengths of each axis for all
+blobs.</p></li>
+<li><p><strong>centroid_coords</strong> -- A list of tuples representing the coordinates of the centroid of
+each existing blob.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="SynthShapes.shapes.MultiLobedBlobBase.make_shapes">
+<span class="sig-name descname"><span class="pre">make_shapes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">shape</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/SynthShapes/shapes.html#MultiLobedBlobBase.make_shapes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#SynthShapes.shapes.MultiLobedBlobBase.make_shapes" title="Link to this definition"></a></dt>
+<dd><p>Make shape labels.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>imprint_tensor</strong> -- Blobs with unique integer labels.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>torch.Tensor[int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="SynthShapes.shapes.MultiLobedBlobBase.sample_axis_lengths">
+<span class="sig-name descname"><span class="pre">sample_axis_lengths</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/SynthShapes/shapes.html#MultiLobedBlobBase.sample_axis_lengths"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#SynthShapes.shapes.MultiLobedBlobBase.sample_axis_lengths" title="Link to this definition"></a></dt>
+<dd><p>Sample the axis lengths for all dimensions of a blob.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>axis_lengths</strong> -- Axis lengths of the blob (D, H, W).</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>torch.Tensor[int, int, int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="SynthShapes.shapes.MultiLobedBlobBase.sample_centroid_coords">
+<span class="sig-name descname"><span class="pre">sample_centroid_coords</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axis_lengths</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/SynthShapes/shapes.html#MultiLobedBlobBase.sample_centroid_coords"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#SynthShapes.shapes.MultiLobedBlobBase.sample_centroid_coords" title="Link to this definition"></a></dt>
+<dd><p>Sample the coordinates of the blob's centroid.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>axis_lengths</strong> (<em>torch.Tensor</em><em>[</em><em>int</em><em>, </em><em>int</em><em>, </em><em>int</em><em>]</em>) -- Axis lengths of the blob (depth, height, width).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>centroid_coords</strong> -- Coordinates of the centroid (depth, height, width).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[int, int, int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="SynthShapes.shapes.MultiLobedBlobBase.sample_nonoverlapping_geometries">
+<span class="sig-name descname"><span class="pre">sample_nonoverlapping_geometries</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/SynthShapes/shapes.html#MultiLobedBlobBase.sample_nonoverlapping_geometries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#SynthShapes.shapes.MultiLobedBlobBase.sample_nonoverlapping_geometries" title="Link to this definition"></a></dt>
+<dd><p>Sample nonoverlapping bounding boxes by generating list of centers and
+axis lengths.</p>
+<p>This method creates two lists (center coordinates and axes lengths)
+that will be used to describe the bounding boxes for each blob to be
+sampled.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><ul class="simple">
+<li><p><strong>centers</strong> (<em>list</em>) -- List of tuples representing the centroid coordinates for each
+bounding box (centroid_coords)</p></li>
+<li><p><strong>axes_list</strong> (<em>list</em>) -- List of tuples representing the length of each 3 axes for each
+geometry</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="SynthShapes.shapes.MultiLobedBlobConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">SynthShapes.shapes.</span></span><span class="sig-name descname"><span class="pre">MultiLobedBlobConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axis_length=&lt;cornucopia.random.RandInt</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">blob_density=&lt;cornucopia.random.Fixed</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_blobs=&lt;cornucopia.random.RandInt</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_lobes=&lt;cornucopia.random.RandInt</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sharpness=&lt;cornucopia.random.Uniform</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">jitter=&lt;cornucopia.random.Uniform</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_mask=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device='cuda'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/SynthShapes/shapes.html#MultiLobedBlobConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#SynthShapes.shapes.MultiLobedBlobConfig" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Configuration container for MultiLobedBlobBase.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="SynthShapes.shapes.MultiLobedBlobConfig.shape">
+<span class="sig-name descname"><span class="pre">shape</span></span><a class="headerlink" href="#SynthShapes.shapes.MultiLobedBlobConfig.shape" title="Link to this definition"></a></dt>
+<dd><p>Size of the 3D volume (assumed to be cubic). Default is [128, 128, 128].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list of int, optional</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="SynthShapes.shapes.MultiLobedBlobConfig.axis_length">
+<span class="sig-name descname"><span class="pre">axis_length</span></span><a class="headerlink" href="#SynthShapes.shapes.MultiLobedBlobConfig.axis_length" title="Link to this definition"></a></dt>
+<dd><p>Range of the lengths for any given axis of the blob. Default is RandInt(3, 6).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Sampler, optional</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="SynthShapes.shapes.MultiLobedBlobConfig.blob_density">
+<span class="sig-name descname"><span class="pre">blob_density</span></span><a class="headerlink" href="#SynthShapes.shapes.MultiLobedBlobConfig.blob_density" title="Link to this definition"></a></dt>
+<dd><p>Density of blobs in the volume. Default is Fixed(0.05).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Sampler, optional</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="SynthShapes.shapes.MultiLobedBlobConfig.n_blobs">
+<span class="sig-name descname"><span class="pre">n_blobs</span></span><a class="headerlink" href="#SynthShapes.shapes.MultiLobedBlobConfig.n_blobs" title="Link to this definition"></a></dt>
+<dd><p>Maximum number of multi-lobed blobs. Default is RandInt(10, 25).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Sampler, optional</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="SynthShapes.shapes.MultiLobedBlobConfig.n_lobes">
+<span class="sig-name descname"><span class="pre">n_lobes</span></span><a class="headerlink" href="#SynthShapes.shapes.MultiLobedBlobConfig.n_lobes" title="Link to this definition"></a></dt>
+<dd><p>Sampler range for the number of lobes per blob. Default is RandInt(1, 5).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Sampler, optional</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="SynthShapes.shapes.MultiLobedBlobConfig.sharpness">
+<span class="sig-name descname"><span class="pre">sharpness</span></span><a class="headerlink" href="#SynthShapes.shapes.MultiLobedBlobConfig.sharpness" title="Link to this definition"></a></dt>
+<dd><p>Upper bound for factor controlling the squareness of the blobs.
+Note: +5 = mostly squares, 2 &lt; sharpness &lt; 4 = spheres, sharpness &lt; 2 = stars.
+Default is Uniform(1, 3).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Sampler, optional</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="SynthShapes.shapes.MultiLobedBlobConfig.jitter">
+<span class="sig-name descname"><span class="pre">jitter</span></span><a class="headerlink" href="#SynthShapes.shapes.MultiLobedBlobConfig.jitter" title="Link to this definition"></a></dt>
+<dd><p>Maximum amount of jitter/raggedness to apply to the shape. Default is Uniform(0, 0.5).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Sampler, optional</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="SynthShapes.shapes.MultiLobedBlobConfig.device">
+<span class="sig-name descname"><span class="pre">device</span></span><a class="headerlink" href="#SynthShapes.shapes.MultiLobedBlobConfig.device" title="Link to this definition"></a></dt>
+<dd><p>Device to perform computations on. Default is 'cuda'.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str, optional</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id0">
+<span class="sig-name descname"><span class="pre">axis_length</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">Sampler</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;cornucopia.random.RandInt</span> <span class="pre">object&gt;</span></em><a class="headerlink" href="#id0" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id1">
+<span class="sig-name descname"><span class="pre">blob_density</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">Sampler</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;cornucopia.random.Fixed</span> <span class="pre">object&gt;</span></em><a class="headerlink" href="#id1" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id2">
+<span class="sig-name descname"><span class="pre">device</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'cuda'</span></em><a class="headerlink" href="#id2" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id3">
+<span class="sig-name descname"><span class="pre">jitter</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">Sampler</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;cornucopia.random.Uniform</span> <span class="pre">object&gt;</span></em><a class="headerlink" href="#id3" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id4">
+<span class="sig-name descname"><span class="pre">n_blobs</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">Sampler</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;cornucopia.random.RandInt</span> <span class="pre">object&gt;</span></em><a class="headerlink" href="#id4" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id5">
+<span class="sig-name descname"><span class="pre">n_lobes</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">Sampler</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;cornucopia.random.RandInt</span> <span class="pre">object&gt;</span></em><a class="headerlink" href="#id5" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="SynthShapes.shapes.MultiLobedBlobConfig.return_mask">
+<span class="sig-name descname"><span class="pre">return_mask</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="headerlink" href="#SynthShapes.shapes.MultiLobedBlobConfig.return_mask" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id6">
+<span class="sig-name descname"><span class="pre">sharpness</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">Sampler</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;cornucopia.random.Uniform</span> <span class="pre">object&gt;</span></em><a class="headerlink" href="#id6" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="SynthShapes.shapes.MultiLobedBlobSampler">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">SynthShapes.shapes.</span></span><span class="sig-name descname"><span class="pre">MultiLobedBlobSampler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config=&lt;class</span> <span class="pre">'SynthShapes.shapes.MultiLobedBlobConfig'&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/SynthShapes/shapes.html#MultiLobedBlobSampler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#SynthShapes.shapes.MultiLobedBlobSampler" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#SynthShapes.shapes.MultiLobedBlobBase" title="SynthShapes.shapes.MultiLobedBlobBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">MultiLobedBlobBase</span></code></a></p>
+<p>PyTorch module to sample multi-lobed blob labels in a 3D tensor.</p>
+<p>Inherits from MultiLobedBlobBase.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>config</strong> (<a class="reference internal" href="#SynthShapes.shapes.MultiLobedBlobConfig" title="SynthShapes.shapes.MultiLobedBlobConfig"><em>MultiLobedBlobConfig</em></a>) -- Configuration container for blob parameters.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="SynthShapes.shapes.MultiLobedBlobSampler.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config=&lt;class</span> <span class="pre">'SynthShapes.shapes.MultiLobedBlobConfig'&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/SynthShapes/shapes.html#MultiLobedBlobSampler.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#SynthShapes.shapes.MultiLobedBlobSampler.__init__" title="Link to this definition"></a></dt>
+<dd><p>PyTorch module to sample multi-lobed blob labels in a 3D tensor.</p>
+<p>Inherits from MultiLobedBlobBase.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>config</strong> (<a class="reference internal" href="#SynthShapes.shapes.MultiLobedBlobConfig" title="SynthShapes.shapes.MultiLobedBlobConfig"><em>MultiLobedBlobConfig</em></a>) -- Configuration container for blob parameters.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="SynthShapes.shapes.MultiLobedBlobSampler.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">shape</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/SynthShapes/shapes.html#MultiLobedBlobSampler.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#SynthShapes.shapes.MultiLobedBlobSampler.forward" title="Link to this definition"></a></dt>
+<dd><p>Apply blob-sampling operation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>shapes</strong> -- Blobs with unique integer labels.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>torch.tensor[int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="SynthShapes.shapes.TorusBlobSampler">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">SynthShapes.shapes.</span></span><span class="sig-name descname"><span class="pre">TorusBlobSampler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">major_radius_range=[10,</span> <span class="pre">20],</span> <span class="pre">minor_radius_range=[3,</span> <span class="pre">6],</span> <span class="pre">n_blobs=&lt;cornucopia.random.RandInt</span> <span class="pre">object&gt;,</span> <span class="pre">jitter=&lt;cornucopia.random.Uniform</span> <span class="pre">object&gt;,</span> <span class="pre">device='cuda',</span> <span class="pre">shape=128,</span> <span class="pre">return_mask=True</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/SynthShapes/shapes.html#TorusBlobSampler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#SynthShapes.shapes.TorusBlobSampler" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TorusBlobBase</span></code></p>
+<p>PyTorch module to sample torus blob labels in a 3D tensor.</p>
+<p>Inherits from TorusBlobBase.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>major_radius_range</strong> (<em>list</em><em> of </em><em>int</em><em>, </em><em>optional</em>) -- Range of lengths for the major radius of the torus. Default is
+[10, 20].</p></li>
+<li><p><strong>minor_radius_range</strong> (<em>list</em><em> of </em><em>int</em><em>, </em><em>optional</em>) -- Range of lengths for the minor radius of the torus. Default is [3, 6].</p></li>
+<li><p><strong>n_blobs</strong> (<em>int</em><em>, </em><em>optional</em>) -- Maximum number of tori to generate. Default is 10.</p></li>
+<li><p><strong>jitter</strong> (<em>float</em><em>, </em><em>optional</em>) -- Maximum amount of jitter to apply to the shape. Default is 0.5.</p></li>
+<li><p><strong>device</strong> (<em>str</em><em>, </em><em>optional</em>) -- Device to run the tensor operations ('cuda' or 'cpu'). Default is
+'cuda'.</p></li>
+<li><p><strong>shape</strong> (<em>int</em><em>, </em><em>optional</em>) -- Size of the 3D volume (assumed to be cubic). Default is 128.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="SynthShapes.shapes.TorusBlobSampler.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">major_radius_range=[10,</span> <span class="pre">20],</span> <span class="pre">minor_radius_range=[3,</span> <span class="pre">6],</span> <span class="pre">n_blobs=&lt;cornucopia.random.RandInt</span> <span class="pre">object&gt;,</span> <span class="pre">jitter=&lt;cornucopia.random.Uniform</span> <span class="pre">object&gt;,</span> <span class="pre">device='cuda',</span> <span class="pre">shape=128,</span> <span class="pre">return_mask=True</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/SynthShapes/shapes.html#TorusBlobSampler.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#SynthShapes.shapes.TorusBlobSampler.__init__" title="Link to this definition"></a></dt>
+<dd><p>PyTorch module to sample torus blob labels in a 3D tensor.</p>
+<p>Inherits from TorusBlobBase.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>major_radius_range</strong> (<em>list</em><em> of </em><em>int</em><em>, </em><em>optional</em>) -- Range of lengths for the major radius of the torus. Default is
+[10, 20].</p></li>
+<li><p><strong>minor_radius_range</strong> (<em>list</em><em> of </em><em>int</em><em>, </em><em>optional</em>) -- Range of lengths for the minor radius of the torus. Default is
+[3, 6].</p></li>
+<li><p><strong>n_blobs</strong> (<em>int</em><em>, </em><em>optional</em>) -- Maximum number of tori to generate. Default is 10.</p></li>
+<li><p><strong>jitter</strong> (<em>float</em><em>, </em><em>optional</em>) -- Maximum amount of jitter to apply to the shape. Default is 0.5.</p></li>
+<li><p><strong>device</strong> (<em>str</em><em>, </em><em>optional</em>) -- Device to run the tensor operations ('cuda' or 'cpu'). Default is
+'cuda'.</p></li>
+<li><p><strong>shape</strong> (<em>int</em><em>, </em><em>optional</em>) -- Size of the 3D volume (assumed to be cubic). Default is 128.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="SynthShapes.shapes.TorusBlobSampler.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/SynthShapes/shapes.html#TorusBlobSampler.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#SynthShapes.shapes.TorusBlobSampler.forward" title="Link to this definition"></a></dt>
+<dd><p>Apply torus sampling operation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>shapes</strong> -- Tori with unique integer labels.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>torch.Tensor[int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="SynthShapes.hist.html" class="btn btn-neutral float-left" title="Hist" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="SynthShapes.texturizing.html" class="btn btn-neutral float-right" title="Texturizing" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Etienne Chollet.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

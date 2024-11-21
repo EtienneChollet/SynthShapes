@@ -66,11 +66,6 @@ class BlendingConfig:
 class MultiLobedBlobBase(nn.Module):
     """
     Base module for multi-lobed blob operations.
-
-    Parameters
-    ----------
-    config : MultiLobedBlobConfig
-        Configuration container for blob parameters.
     """
     def __init__(self, config: MultiLobedBlobConfig = MultiLobedBlobConfig):
         """
