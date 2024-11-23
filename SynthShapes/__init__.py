@@ -1,5 +1,5 @@
 """
-SynthShapes is a primitive yet powerful PyTorch-based toolbox designed to
+`SynthShapes` is a primitive yet powerful PyTorch-based toolbox designed to
 generate synthetic 3D shapes, tailored specifically for augmenting biomedical
 imaging datasets. It is built to address the challenges faced in machine
 learning pipelines for biomedical imaging, such as limited availability of

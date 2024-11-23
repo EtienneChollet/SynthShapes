@@ -1,7 +1,10 @@
 """
-## Overview 
+## Overview
 
-The `Blender` module contains tools for alpha-blending tensors.
+The SynthShapes.blending module offers simple tools for combining multiple
+shapes, textures, or regions within an image to create seamless and realistic
+synthetic data. This module is ideal for applications that require simple to
+complex image compositions.
 """
 
 __all__ = [

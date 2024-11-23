@@ -1,3 +1,9 @@
+"""
+The `SynthShapes.texturizing` module provides tools for converting labeled data
+into textured intensity images, facilitating the creation of synthetic medical
+images with realistic textures.
+"""
+
 __all__ = [
     'LabelsToIntensities',
     'ParenchymaSynthesizer'

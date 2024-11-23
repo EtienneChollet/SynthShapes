@@ -1,3 +1,29 @@
+"""
+## Overview
+
+The `SynthShapes.shapes` module provides a comprehensive toolkit for generating
+geometric shapes and patterns, tailored for synthetic image generation in
+biomedical imaging and beyond. This module supports a variety of 2D and 3D
+shapes with customizable parameters, enabling users to create realistic and
+diverse datasets for machine learning and computer vision applications.
+
+## Features
+
+* **Shape Generators**: Includes predefined methods for creating common
+geometric shapes like spheres, stars, toroids, rectangles, spheres, and cubes.
+
+* **Customizability**: Allows fine-tuning of parameters such as size, position,
+orientation, and intensity for each shape.
+
+* **Multi-shape Compositions**: Supports combining multiple shapes into a
+single image for more complex synthetic data.
+
+* **Label Maps**: Since texturized data is synthesized from semantic label
+maps, one-hot encoded labels are easily retreived for semantic segmentation
+workflows.
+
+
+"""
 __all__ = [
     'MultiLobedBlobConfig',
     'MultiLobedBlobBase',
