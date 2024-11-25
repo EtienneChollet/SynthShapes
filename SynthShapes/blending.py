@@ -19,6 +19,32 @@ from torch.nn import Module
 
 
 class Blender(Module):
+    """
+    An [`nn.Module`][torch.nn.Module] for alpha blending ROIs of two tensors
+    within a specified ROI mask, and according to the blending parameter
+    `alpha`.
+
+    !!! tip "Diagram"
+        ```mermaid
+            flowchart TB
+                subgraph Inputs
+                    foreground[Foreground Tensor]
+                    background[Background Tensor]
+                    mask[Mask: ROIs to blend]
+                end
+                foreground --standardize(μ=0, σ=1)--> standardized_foreground
+                mask --> masked_shifting
+                background --standardize(μ=0, σ=1)--> standardized_background
+                standardized_foreground --> masked_shifting
+                masked_shifting(Shift Foreground ROIs: add offset to masked
+                elements in standardized foreground) --> shifted_rois
+                shifted_rois["Shifted Foreground ROIs"] --> blender_function
+                standardized_background --> blender_function
+                blender_function("Blender Function: alpha blend ROIs") -->
+                output[Output: Blended Tensor]
+
+        ```
+    """
 
     def __init__(
         self,
@@ -26,9 +52,6 @@ class Blender(Module):
         intensity_shift: float = 10
     ):
         """
-        [`nn.Module`][torch.nn.Module] To alpha blend two tensors according to
-        the blending parameter `alpha`.
-
         Parameters
         ----------
         alpha : Sampler or float
