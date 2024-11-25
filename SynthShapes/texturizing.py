@@ -7,23 +7,41 @@ images with realistic textures.
 __all__ = [
     'LabelsToIntensities',
     'ParenchymaSynthesizer'
+    'TexturizeLabels'
 ]
 
+from typing import Union, List
 import torch
-import cornucopia as cc
+from torch import nn
 from torch.nn import Module
+import cornucopia as cc
 from cornucopia.random import make_range
-from SynthShapes.blending import Blender
 from cornucopia.labels import RandomGaussianMixtureTransform
-
+from .blending import Blender
 from .utils import MinMaxScaler
 
 
 class LabelsToIntensities(Module):
+    """
+    Convert a set of labeled data with unique IDs into intensity images using
+    Gaussian Mixture Models.
 
-    def __init__(self, mu=1, sigma=2, min=0.1, max=0.5, transform=None):
+    This module transforms (int) labeled tensors, where each label represents a
+    distinct region or structure, into intensity images. It applies a Gaussian
+    Mixture Model (GMM) to texturize and assign semi-realistic intensity values
+    to each label with randomly sampled mean values, facilitating the
+    generation of synthetic images with varied textures.
+    """
+    def __init__(
+        self,
+        mu: Union[float, int] = 1,
+        sigma: Union[float, int] = 2,
+        min: Union[float, int] = 0.1,
+        max: Union[float, int] = 0.5,
+        transform: nn.Module = None
+    ):
         """
-        Convert a set of labels with unique IDs into intensities.
+        Initialize the `LabelsToIntensities` module.
 
         Parameters
         ----------
@@ -48,24 +66,29 @@ class LabelsToIntensities(Module):
         else:
             self.transform = transform
 
-    def forward(self, labels):
+    def forward(self, labels: torch.Tensor) -> torch.Tensor:
         """
-        Apply the transformation
+        Convert labeled data into intensity images by applying the GMM.
 
         Parameters
         ----------
         labels : torch.Tensor
-            Labels with unique int ID's. Shape: (x, y, z)
-        """
+            Labels of shape (D, H, W) with unique integer IDs
 
+        Returns
+        -------
+        torch.Tensor
+            An intensity image tensor where each label has been replaced by
+            a corresponding intensity value (the average intensity value for
+            that region). Background regions (label=0) are set to zero.
+            Output shape is identical to input: (D, H, W)
+        """
         # Create a mask for all labels (background = 0, labels = 1)
-        label_mask = (torch.clone(labels) != 0)
+        label_mask = torch.clone(labels) != 0
         # Assign intensities by applying transform
         intensities = self.transform(labels)
         # Invert mask and zero all background values
         intensities[~label_mask] = 0
-        
-
         return intensities
 
 
