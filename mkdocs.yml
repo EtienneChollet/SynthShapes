@@ -33,3 +33,31 @@ plugins:
           members_order: source
           show_source: True
           show_root_heading: True
+
+### Markdown stuff
+markdown_extensions:
+- admonition
+- toc:
+    toc_depth: 3
+# - markdown_grid_tables
+- pymdownx.details
+- pymdownx.superfences
+- pymdownx.highlight:
+    anchor_linenums: true
+    line_spans: __span
+    pygments_lang_class: true
+- pymdownx.inlinehilite
+- pymdownx.snippets
+- pymdownx.arithmatex:
+    generic: true
+- pymdownx.superfences:
+    custom_fences:
+    - name: mermaid
+      class: mermaid
+      format: !!python/name:pymdownx.superfences.fence_code_format
+- pymdownx.superfences
+- pymdownx.tabbed:
+    alternate_style: true
+    slugify: !!python/object/apply:pymdownx.slugs.slugify
+      kwds:
+        case: lower
